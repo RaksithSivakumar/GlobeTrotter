@@ -9,7 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/lib/supabase';
 import { Trip } from '@/lib/types';
 import { getTempTrips, deleteTempTrip, saveTempTrip, initializeTempStorage } from '@/lib/tempStorage';
-import { Plus, Map, Calendar, DollarSign, Eye, Edit, Trash2, Share2 } from 'lucide-react';
+import { Plus, Map, Calendar, DollarSign, Eye, Edit, Trash2, Share2, Globe } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 
 const IconBtn = ({ icon, onClick, danger }: { icon: React.ReactNode; onClick: () => void; danger?: boolean }) => (
@@ -182,7 +184,11 @@ export default function TripsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {trips.map(trip => (
-            <Card key={trip.id} className="bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg transition">
+            <Card 
+              key={trip.id} 
+              className="bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg transition cursor-pointer"
+              onClick={() => router.push(`/trips/${trip.id}/timeline`)}
+            >
               <div className="relative h-44">
                 <img
                   src={trip.cover_photo_url || 'https://images.pexels.com/photos/346885/pexels-photo-346885.jpeg'}
@@ -195,7 +201,7 @@ export default function TripsPage() {
                 )}
               </div>
 
-              <CardContent className="p-5">
+              <CardContent className="p-5" onClick={(e) => e.stopPropagation()}>
                 <h3 className="text-lg font-semibold text-slate-900 mb-1">{trip.name}</h3>
                 <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
@@ -212,19 +218,38 @@ export default function TripsPage() {
                   </span>
 
                   <div className="flex gap-2">
-                    <IconBtn danger icon={<Trash2 />} onClick={() => setDeleteDialog(trip.id)} />
+                    <IconBtn danger icon={<Trash2 />} onClick={(e) => { e.stopPropagation(); setDeleteDialog(trip.id); }} />
                   </div>
+                </div>
+
+                {/* Public/Private Toggle */}
+                <div className="flex items-center justify-between mb-4 p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-slate-600" />
+                    <Label htmlFor={`public-${trip.id}`} className="text-sm text-slate-700 cursor-pointer">
+                      Make Public
+                    </Label>
+                  </div>
+                  <Switch
+                    id={`public-${trip.id}`}
+                    checked={trip.is_public || false}
+                    onCheckedChange={(checked) => {
+                      const updatedTrip = { ...trip, is_public: checked };
+                      togglePublic(updatedTrip);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
                 </div>
 
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => router.push(`/trips/${trip.id}/timeline`)}
+                    onClick={(e) => { e.stopPropagation(); router.push(`/trips/${trip.id}/timeline`); }}
                     className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
                   >
                     View Timeline
                   </Button>
                   <Button
-                    onClick={() => router.push(`/itinerary?tripId=${trip.id}`)}
+                    onClick={(e) => { e.stopPropagation(); router.push(`/itinerary?tripId=${trip.id}`); }}
                     variant="outline"
                     className="flex-1"
                   >
