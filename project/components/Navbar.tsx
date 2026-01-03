@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,15 +17,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Plane, User, Settings, LogOut, Home, Map, Calendar, Users } from 'lucide-react';
 
 export default function Navbar() {
-  const { user, profile, signOut, isAdmin } = useAuth();
+  const { user, profile, signOut, isAdmin = false } = useAuth();
   const pathname = usePathname();
 
-  const navLinks = [
+  const navLinks = useMemo(() => [
     { href: isAdmin ? '/admin-dashboard' : '/dashboard', label: isAdmin ? 'Admin Dashboard' : 'Dashboard', icon: Home },
     ...(isAdmin ? [] : [{ href: '/trips', label: 'My Trips', icon: Map }]), // Hide "My Trips" for admin
     { href: '/explore', label: 'Explore', icon: Calendar },
     { href: '/community', label: 'Community', icon: Users },
-  ];
+  ], [isAdmin]);
 
   const isActive = (href: string) => pathname === href;
 
