@@ -449,7 +449,7 @@ export default function TravelCalendar() {
             </div>
 
             {/* Month Navigation */}
-            <div className="flex items-center justify-between mb-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border-2 border-blue-100">
+            <div className="flex items-center justify-between mb-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-2 border-2 border-blue-100">
               <button
                 onClick={() => navigateMonth(-1)}
                 className="p-2 hover:bg-white rounded-lg transition-all text-blue-700 hover:shadow-md"
