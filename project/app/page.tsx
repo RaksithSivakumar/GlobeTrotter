@@ -3,15 +3,18 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import AuthForm from '@/components/AuthForm';
 
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard');
+    if (!loading) {
+      if (user) {
+        router.push('/dashboard');
+      } else {
+        router.push('/login');
+      }
     }
   }, [user, loading, router]);
 
@@ -23,9 +26,5 @@ export default function Home() {
     );
   }
 
-  if (user) {
-    return null;
-  }
-
-  return <AuthForm />;
+  return null;
 }
