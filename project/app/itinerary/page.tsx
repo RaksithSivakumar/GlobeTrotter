@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ItineraryNavbar from '@/components/ItineraryNavbar';
 import ItinerarySection from '@/components/ItinerarySection';
@@ -29,25 +29,11 @@ function ItineraryPlannerContent() {
       startDate: '',
       endDate: '',
       budget: '',
+      type: 'activity' as const,
     },
   ]);
 
-  useEffect(() => {
-    // Initialize temp storage
-    initializeTempStorage();
-    
-    if (tripId) {
-      loadTripData();
-    } else {
-      // Load draft sections if no tripId
-      const draftSections = getItinerarySections('draft-itinerary');
-      if (draftSections && draftSections.length > 0) {
-        setSections(draftSections);
-      }
-    }
-  }, [tripId]);
-
-  const loadTripData = async () => {
+  const loadTripData = useCallback(async () => {
     if (!tripId) return;
     
     setLoadingTrip(true);
@@ -81,16 +67,16 @@ function ItineraryPlannerContent() {
           setSections(savedSections);
         } else {
           // Pre-populate with trip data if no saved sections
-          setSections([
-            {
-              id: crypto.randomUUID(),
-              title: tripData.name || '',
-              description: tripData.description || '',
-              startDate: tripData.start_date ? tripData.start_date.split('T')[0] : '',
-              endDate: tripData.end_date ? tripData.end_date.split('T')[0] : '',
-              budget: tripData.total_budget ? tripData.total_budget.toString() : '',
-            },
-          ]);
+          const defaultSection: ItinerarySectionData = {
+            id: crypto.randomUUID(),
+            title: tripData.name || '',
+            description: tripData.description || '',
+            startDate: tripData.start_date ? tripData.start_date.split('T')[0] : '',
+            endDate: tripData.end_date ? tripData.end_date.split('T')[0] : '',
+            budget: tripData.total_budget ? tripData.total_budget.toString() : '',
+            type: 'activity',
+          };
+          setSections([defaultSection]);
         }
       }
     } catch (error) {
@@ -99,7 +85,22 @@ function ItineraryPlannerContent() {
     } finally {
       setLoadingTrip(false);
     }
-  };
+  }, [tripId]);
+
+  useEffect(() => {
+    // Initialize temp storage
+    initializeTempStorage();
+    
+    if (tripId) {
+      loadTripData();
+    } else {
+      // Load draft sections if no tripId
+      const draftSections = getItinerarySections('draft-itinerary');
+      if (draftSections && draftSections.length > 0) {
+        setSections(draftSections);
+      }
+    }
+  }, [tripId, loadTripData]);
 
   // Auto-save sections to localStorage whenever they change
   useEffect(() => {
@@ -115,17 +116,16 @@ function ItineraryPlannerContent() {
   }, [sections, tripId]);
 
   const handleAddSection = () => {
-    const newSections = [
-      ...sections,
-      {
-        id: crypto.randomUUID(),
-        title: '',
-        description: '',
-        startDate: '',
-        endDate: '',
-        budget: '',
-      },
-    ];
+    const newSection: ItinerarySectionData = {
+      id: crypto.randomUUID(),
+      title: '',
+      description: '',
+      startDate: '',
+      endDate: '',
+      budget: '',
+      type: 'activity',
+    };
+    const newSections = [...sections, newSection];
     setSections(newSections);
     
     // Save immediately
@@ -149,9 +149,17 @@ function ItineraryPlannerContent() {
     field: keyof ItinerarySectionData,
     value: string
   ) => {
-    const newSections = sections.map((section) =>
-      section.id === id ? { ...section, [field]: value } : section
-    );
+    const newSections = sections.map((section) => {
+      if (section.id === id) {
+        // Type guard for the 'type' field
+        if (field === 'type') {
+          const typeValue = value as 'travel' | 'hotel' | 'activity' | 'food';
+          return { ...section, [field]: typeValue };
+        }
+        return { ...section, [field]: value };
+      }
+      return section;
+    });
     setSections(newSections);
     
     // Auto-save is handled by useEffect, but we can also save immediately for critical updates
