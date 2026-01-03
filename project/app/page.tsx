@@ -3,17 +3,25 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import AuthForm from '@/components/AuthForm';
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard');
+    if (!loading) {
+      if (user) {
+        // Route to admin dashboard if admin, otherwise to user dashboard
+        if (isAdmin) {
+          router.push('/admin-dashboard');
+        } else {
+          router.push('/dashboard');
+        }
+      } else {
+        router.push('/login');
+      }
     }
-  }, [user, loading, router]);
+  }, [user, loading, isAdmin, router]);
 
   if (loading) {
     return (
@@ -23,9 +31,5 @@ export default function Home() {
     );
   }
 
-  if (user) {
-    return null;
-  }
-
-  return <AuthForm />;
+  return null;
 }
