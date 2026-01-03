@@ -130,7 +130,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Welcome back, {profile?.full_name || 'Traveler'}!
@@ -162,7 +162,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
           <Link href="/calendar-view">
-            <Card className="hover:shadow-lg transition-shadow h-full">
+            <Card className="hover:shadow-lg transition-shadow h-full bg-gradient-to-br from-white via-blue-50 to-blue-100">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Calendar View</CardTitle>
                 <Calendar className="h-4 w-4 text-emerald-600" />
@@ -355,60 +355,60 @@ export default function Dashboard() {
         {/* Routes Section */}
         <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
           <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-12">
-            <h2 className="text-5xl font-black text-gray-900">ROUTES</h2>
-            <div className="flex gap-3">
-              <button
-                onClick={prevRoute}
-                className="w-12 h-12 border-2 border-gray-300 rounded-full flex items-center justify-center hover:border-gray-900 transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={nextRoute}
-                className="w-12 h-12 border-2 border-gray-300 rounded-full flex items-center justify-center hover:border-gray-900 transition-colors"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {popularCities
-              .slice(currentRouteIndex, currentRouteIndex + 3)
-              .map((city, index) => (
-                <Card
-                  key={city.id}
-                  className="group cursor-pointer overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 rounded-3xl"
-                  onClick={() => router.push(`/explore?city=${city.id}`)}
+            <div className="flex justify-between items-center mb-12">
+              <h2 className="text-5xl font-black text-gray-900">ROUTES</h2>
+              <div className="flex gap-3">
+                <button
+                  onClick={prevRoute}
+                  className="w-12 h-12 border-2 border-gray-300 rounded-full flex items-center justify-center hover:border-gray-900 transition-colors"
                 >
-                  <div className="relative h-80 overflow-hidden">
-                    <img
-                      src={
-                        city.image_url ||
-                        "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&h=800&fit=crop"
-                      }
-                      alt={city.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    <div className="absolute bottom-6 left-6 right-6">
-                      <div className="flex items-center gap-2 text-white mb-2">
-                        <MapPin className="w-4 h-4" />
-                        <span className="text-sm">{city.country}</span>
-                      </div>
-                      <h3 className="text-2xl font-black text-white mb-4">
-                        {city.name}
-                      </h3>
-                      <div className="flex justify-between items-center text-white text-sm">
-                        <span>Explore destination</span>
-                        <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={nextRoute}
+                  className="w-12 h-12 border-2 border-gray-300 rounded-full flex items-center justify-center hover:border-gray-900 transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {popularCities
+                .slice(currentRouteIndex, currentRouteIndex + 3)
+                .map((city, index) => (
+                  <Card
+                    key={city.id}
+                    className="group cursor-pointer overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 rounded-3xl"
+                    onClick={() => router.push(`/explore?city=${city.id}`)}
+                  >
+                    <div className="relative h-80 overflow-hidden">
+                      <img
+                        src={
+                          city.image_url ||
+                          "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&h=800&fit=crop"
+                        }
+                        alt={city.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                      <div className="absolute bottom-6 left-6 right-6">
+                        <div className="flex items-center gap-2 text-white mb-2">
+                          <MapPin className="w-4 h-4" />
+                          <span className="text-sm">{city.country}</span>
+                        </div>
+                        <h3 className="text-2xl font-black text-white mb-4">
+                          {city.name}
+                        </h3>
+                        <div className="flex justify-between items-center text-white text-sm">
+                          <span>Explore destination</span>
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
-          </div>
+                  </Card>
+                ))}
+            </div>
           </div>
         </section>
 

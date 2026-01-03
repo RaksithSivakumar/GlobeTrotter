@@ -370,7 +370,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         session,
         loading,
-        isAdmin,
+        isAdmin: isAdmin ?? false,
         signUp,
         signIn,
         signOut,
