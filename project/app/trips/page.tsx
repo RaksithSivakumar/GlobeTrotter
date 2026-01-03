@@ -10,6 +10,15 @@ import { supabase } from '@/lib/supabase';
 import { Trip } from '@/lib/types';
 import { Plus, Map, Calendar, DollarSign, Eye, Edit, Trash2, Share2 } from 'lucide-react';
 import Link from 'next/link';
+
+const IconBtn = ({ icon, onClick, danger }: { icon: React.ReactNode; onClick: () => void; danger?: boolean }) => (
+  <button
+    onClick={onClick}
+    className={`p-2 rounded-lg transition ${danger ? 'hover:bg-rose-100 text-rose-600' : 'hover:bg-slate-100 text-slate-600'}`}
+  >
+    {icon}
+  </button>
+);
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import {
@@ -90,135 +99,112 @@ export default function TripsPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-cyan-50">
-      <Navbar />
+ return (
+  <div className="min-h-screen bg-slate-50">
+    <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">My Trips</h1>
-            <p className="text-gray-600">Manage all your travel plans in one place</p>
-          </div>
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-10">
+        <div>
+          <h1 className="text-3xl font-semibold text-slate-900">Your Trips</h1>
+          <p className="text-sm text-slate-500">Manage and organize your journeys</p>
+        </div>
+        <Link href="/trips/create">
+          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Plus className="w-4 h-4 mr-2" />
+            New Trip
+          </Button>
+        </Link>
+      </div>
+
+      {/* Content */}
+      {loadingData ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1,2,3].map(i => (
+            <div key={i} className="h-72 bg-slate-200 animate-pulse rounded-xl" />
+          ))}
+        </div>
+      ) : trips.length === 0 ? (
+        <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
+          <Map className="w-14 h-14 text-indigo-400 mx-auto mb-4" />
+          <h3 className="text-xl font-medium mb-2">No trips yet</h3>
+          <p className="text-slate-500 mb-6">Create your first trip to get started.</p>
           <Link href="/trips/create">
-            <Button size="lg" className="bg-gradient-to-r from-orange-500 to-cyan-600">
-              <Plus className="w-5 h-5 mr-2" />
-              New Trip
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Trip
             </Button>
           </Link>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {trips.map(trip => (
+            <Card key={trip.id} className="bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg transition">
+              <div className="relative h-44">
+                <img
+                  src={trip.cover_photo_url || 'https://images.pexels.com/photos/346885/pexels-photo-346885.jpeg'}
+                  className="w-full h-full object-cover"
+                />
+                {trip.is_public && (
+                  <span className="absolute top-3 right-3 bg-emerald-500 text-white text-xs px-3 py-1 rounded-full">
+                    Public
+                  </span>
+                )}
+              </div>
 
-        {loadingData ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-64 bg-gray-200 rounded-lg animate-pulse" />
-            ))}
-          </div>
-        ) : trips.length === 0 ? (
-          <Card className="text-center py-16">
-            <CardContent>
-              <Map className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-2xl font-semibold mb-2">No trips yet</h3>
-              <p className="text-gray-600 mb-6">Start planning your first adventure and explore the world!</p>
-              <Link href="/trips/create">
-                <Button size="lg" className="bg-gradient-to-r from-orange-500 to-cyan-600">
-                  <Plus className="w-5 h-5 mr-2" />
-                  Create Your First Trip
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {trips.map(trip => (
-              <Card key={trip.id} className="overflow-hidden hover:shadow-xl transition-all group">
-                <div className="relative h-48">
-                  <img
-                    src={trip.cover_photo_url || 'https://images.pexels.com/photos/346885/pexels-photo-346885.jpeg'}
-                    alt={trip.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                  <div className="absolute top-4 right-4">
-                    {trip.is_public && (
-                      <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                        Public
-                      </div>
-                    )}
-                  </div>
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <h3 className="text-white font-bold text-xl mb-1">{trip.name}</h3>
-                    <div className="flex items-center text-white/90 text-sm">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {format(parseISO(trip.start_date), 'MMM d')} - {format(parseISO(trip.end_date), 'MMM d, yyyy')}
-                    </div>
+              <CardContent className="p-5">
+                <h3 className="text-lg font-semibold text-slate-900 mb-1">{trip.name}</h3>
+                <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {format(parseISO(trip.start_date), 'MMM d')} – {format(parseISO(trip.end_date), 'MMM d, yyyy')}
+                </p>
+
+                <p className="text-sm text-slate-600 line-clamp-2 mb-4">
+                  {trip.description || 'No description provided'}
+                </p>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-indigo-600 flex items-center gap-1">
+                    <DollarSign className="w-4 h-4" /> ${Number(trip.total_budget || 0).toFixed(0)}
+                  </span>
+
+                  <div className="flex gap-2">
+                    <IconBtn icon={<Eye />} onClick={() => router.push(`/trips/${trip.id}`)} />
+                    <IconBtn icon={<Edit />} onClick={() => router.push(`/trips/${trip.id}/edit`)} />
+                    <IconBtn danger icon={<Trash2 />} onClick={() => setDeleteDialog(trip.id)} />
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-                <CardContent className="p-4">
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2 h-10">
-                    {trip.description || 'No description provided'}
-                  </p>
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Trip?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this trip and all related data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-rose-600 hover:bg-rose-700"
+              onClick={() => deleteDialog && handleDelete(deleteDialog)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-                  <div className="flex items-center justify-between mb-4 pb-4 border-b">
-                    <div className="flex items-center text-orange-600">
-                      <DollarSign className="w-4 h-4 mr-1" />
-                      <span className="font-semibold">${Number(trip.total_budget || 0).toFixed(0)}</span>
-                    </div>
-                  </div>
+    </main>
+  </div>
+);
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => router.push(`/trips/${trip.id}`)}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => router.push(`/trips/${trip.id}/edit`)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full text-red-600 hover:text-red-700"
-                      onClick={() => setDeleteDialog(trip.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        <AlertDialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Trip</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete this trip? This action cannot be undone and will delete all stops, activities, and expenses associated with this trip.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => deleteDialog && handleDelete(deleteDialog)}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </main>
-    </div>
-  );
 }
