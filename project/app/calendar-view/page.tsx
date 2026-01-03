@@ -408,30 +408,30 @@ export default function TravelCalendar() {
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-5 shadow-lg text-white transform hover:scale-105 transition-transform">
+            <div className="bg-white rounded-xl p-5 shadow-lg border-2 border-blue-200 transform hover:scale-105 transition-transform">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-blue-100 text-sm font-medium">Total Trips</div>
-                <Luggage className="w-5 h-5 text-blue-100" />
+                <div className="text-gray-600 text-sm font-medium">Total Trips</div>
+                <Luggage className="w-5 h-5 text-blue-500" />
               </div>
-              <div className="text-3xl font-bold">
+              <div className="text-3xl font-bold text-gray-900">
                 {travelDates.length}
               </div>
             </div>
-            <div className="bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl p-5 shadow-lg text-white transform hover:scale-105 transition-transform">
+            <div className="bg-white rounded-xl p-5 shadow-lg border-2 border-blue-200 transform hover:scale-105 transition-transform">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-teal-100 text-sm font-medium">Activities</div>
-                <Camera className="w-5 h-5 text-teal-100" />
+                <div className="text-gray-600 text-sm font-medium">Activities</div>
+                <Camera className="w-5 h-5 text-teal-500" />
               </div>
-              <div className="text-3xl font-bold">
+              <div className="text-3xl font-bold text-gray-900">
                 {totalActivities}
               </div>
             </div>
-            <div className="bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl p-5 shadow-lg text-white transform hover:scale-105 transition-transform">
+            <div className="bg-white rounded-xl p-5 shadow-lg border-2 border-blue-200 transform hover:scale-105 transition-transform">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-orange-100 text-sm font-medium">Total Spent</div>
-                <DollarSign className="w-5 h-5 text-orange-100" />
+                <div className="text-gray-600 text-sm font-medium">Total Spent</div>
+                <DollarSign className="w-5 h-5 text-orange-500" />
               </div>
-              <div className="text-3xl font-bold">
+              <div className="text-3xl font-bold text-gray-900">
                 ${totalCost}
               </div>
             </div>
@@ -478,6 +478,18 @@ export default function TravelCalendar() {
               </div>
             </div>
 
+            {/* Legend */}
+            <div className="mb-4 flex items-center justify-center gap-8 text-sm relative z-10 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-gradient-to-br from-blue-400 to-cyan-400 border-2 border-blue-300 rounded-lg shadow-sm"></div>
+                <span className="font-medium text-blue-700">Travel day</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-white border-2 border-gray-300 rounded-lg"></div>
+                <span className="font-medium text-gray-600">No travel</span>
+              </div>
+            </div>
+
             {/* Days of Week */}
             <div className="grid grid-cols-7 gap-2 mb-3 relative z-10">
               {daysOfWeek.map((day) => (
@@ -491,19 +503,7 @@ export default function TravelCalendar() {
             </div>
 
             {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-2 relative z-10 mb-6">{renderCalendar()}</div>
-
-            {/* Legend */}
-            <div className="mt-6 flex items-center justify-center gap-8 text-sm relative z-10 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-gradient-to-br from-blue-400 to-cyan-400 border-2 border-blue-300 rounded-lg shadow-sm"></div>
-                <span className="font-medium text-blue-700">Travel day</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-white border-2 border-gray-300 rounded-lg"></div>
-                <span className="font-medium text-gray-600">No travel</span>
-              </div>
-            </div>
+            <div className="grid grid-cols-7 gap-2 relative z-10">{renderCalendar()}</div>
           </div>
 
           {/* Travel List Sidebar */}
