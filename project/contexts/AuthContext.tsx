@@ -10,7 +10,15 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, additionalData?: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    city?: string;
+    country?: string;
+    avatarUrl?: string;
+    additionalInfo?: string;
+  }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -18,45 +26,21 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Check if Supabase is configured
-const isSupabaseConfigured = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  return !!(url && key && url !== '' && key !== '' && !url.includes('placeholder'));
-};
-
-// Dummy mode - use localStorage for mock auth
-const DUMMY_AUTH_KEY = 'dummy_auth_user';
-const DUMMY_PROFILE_KEY = 'dummy_auth_profile';
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [useDummyAuth, setUseDummyAuth] = useState(false);
 
-  const fetchProfile = async (userId: string, isDummy: boolean = false) => {
-    if (isDummy || useDummyAuth) {
-      const stored = localStorage.getItem(DUMMY_PROFILE_KEY);
-      if (stored) {
-        setProfile(JSON.parse(stored));
-      }
-      return;
-    }
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
 
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (data) {
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+    if (data) {
+      setProfile(data);
     }
   };
 
@@ -66,154 +50,135 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Initialize auth - check for dummy mode or real Supabase
   useEffect(() => {
-    const configured = isSupabaseConfigured();
-    
-    if (!configured) {
-      // Use dummy auth
-      setUseDummyAuth(true);
-      const storedUser = localStorage.getItem(DUMMY_AUTH_KEY);
-      const storedProfile = localStorage.getItem(DUMMY_PROFILE_KEY);
-      
-      if (storedUser && storedProfile) {
-        setUser(JSON.parse(storedUser));
-        setProfile(JSON.parse(storedProfile));
-        // Create a mock session
-        setSession({
-          access_token: 'dummy_token',
-          token_type: 'bearer',
-          expires_in: 3600,
-          expires_at: Date.now() + 3600000,
-          refresh_token: 'dummy_refresh',
-          user: JSON.parse(storedUser),
-        } as Session);
+    // Check localStorage for cached user data first
+    try {
+      const cachedUser = localStorage.getItem('globetrotter_user');
+      const cachedProfile = localStorage.getItem('globetrotter_profile');
+      const cachedSession = localStorage.getItem('globetrotter_session');
+
+      if (cachedUser && cachedProfile && cachedSession) {
+        const user = JSON.parse(cachedUser);
+        const profile = JSON.parse(cachedProfile);
+        const session = JSON.parse(cachedSession);
+        
+        setUser(user);
+        setProfile(profile);
+        setSession(session);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-      return;
+    } catch (error) {
+      console.error('Error loading cached user data:', error);
     }
 
-    // Use real Supabase
-    setUseDummyAuth(false);
-    let subscription: { unsubscribe: () => void } | null = null;
-    
-    try {
-      supabase.auth.getSession().then(({ data: { session } }) => {
+    // Fallback to Supabase session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          fetchProfile(session.user.id, false);
+          fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
         }
         setLoading(false);
-      }).catch(() => {
-        // If Supabase fails, fall back to dummy mode
-        setUseDummyAuth(true);
-        setLoading(false);
-      });
-
-      const { data } = supabase.auth.onAuthStateChange(
-        (_event, session) => {
-          setSession(session);
-          setUser(session?.user ?? null);
-          if (session?.user) {
-            fetchProfile(session.user.id, false);
-          } else {
-            setProfile(null);
-          }
-          setLoading(false);
-        }
-      );
-      subscription = data;
-    } catch (error) {
-      // If Supabase fails to initialize, use dummy mode
-      setUseDummyAuth(true);
-      setLoading(false);
-    }
-
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe();
       }
-    };
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    if (useDummyAuth) {
-      // Create dummy user
-      const dummyUser: User = {
-        id: `dummy_${Date.now()}`,
-        email: email,
-        created_at: new Date().toISOString(),
-        app_metadata: {},
-        user_metadata: { full_name: fullName },
-        aud: 'authenticated',
-        confirmation_sent_at: null,
-        recovery_sent_at: null,
-        email_confirmed_at: new Date().toISOString(),
-        invited_at: null,
-        last_sign_in_at: new Date().toISOString(),
-        phone: null,
-        confirmed_at: new Date().toISOString(),
-        email_change_sent_at: null,
-        new_email: null,
-        phone_confirmed_at: null,
-        phone_change: null,
-        phone_change_token: null,
-        email_change: null,
-        email_change_token: null,
-        is_anonymous: false,
-      };
+  const signUp = async (email: string, password: string, fullName: string, additionalData?: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    city?: string;
+    country?: string;
+    avatarUrl?: string;
+    additionalInfo?: string;
+  }) => {
+    // For demo purposes, create a mock user similar to signIn
+    // In production, you would use Supabase auth
+    const mockUserId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    const mockUser = {
+      id: mockUserId,
+      email: email,
+      created_at: new Date().toISOString(),
+      app_metadata: {},
+      user_metadata: {},
+      aud: 'authenticated',
+      confirmation_sent_at: undefined,
+      recovery_sent_at: undefined,
+      email_confirmed_at: new Date().toISOString(),
+      invited_at: undefined,
+      action_link: undefined,
+      phone: additionalData?.phone || undefined,
+      phone_confirmed_at: undefined,
+      phone_confirmed: false,
+      confirmed_at: new Date().toISOString(),
+      last_sign_in_at: new Date().toISOString(),
+      role: 'authenticated',
+      updated_at: new Date().toISOString(),
+      identities: [],
+      factors: undefined,
+      is_anonymous: false,
+    } as User;
 
-      const dummyProfile: Profile = {
-        id: dummyUser.id,
-        email: email,
-        full_name: fullName,
-        avatar_url: null,
-        language: 'en',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+    const fullNameFromData = additionalData?.firstName && additionalData?.lastName
+      ? `${additionalData.firstName} ${additionalData.lastName}`
+      : fullName;
 
-      localStorage.setItem(DUMMY_AUTH_KEY, JSON.stringify(dummyUser));
-      localStorage.setItem(DUMMY_PROFILE_KEY, JSON.stringify(dummyProfile));
+    const mockProfile: Profile = {
+      id: mockUser.id,
+      email: mockUser.email!,
+      full_name: fullNameFromData,
+      avatar_url: additionalData?.avatarUrl || null,
+      language: 'en',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-      setUser(dummyUser);
-      setProfile(dummyProfile);
-      setSession({
-        access_token: 'dummy_token',
-        token_type: 'bearer',
-        expires_in: 3600,
-        expires_at: Date.now() + 3600000,
-        refresh_token: 'dummy_refresh',
-        user: dummyUser,
-      } as Session);
-      return;
-    }
+    const mockSession = {
+      access_token: `mock-access-token-${mockUserId}`,
+      token_type: 'bearer' as const,
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      refresh_token: `mock-refresh-token-${mockUserId}`,
+      user: mockUser,
+    } as Session;
+
+    // Store extended user data in localStorage
+    const extendedUserData = {
+      ...additionalData,
+      fullName: fullNameFromData,
+      email: email,
+      userId: mockUserId,
+    };
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        await supabase.from('profiles').insert({
-          id: data.user.id,
-          email: data.user.email!,
-          full_name: fullName,
-        });
-      }
-    } catch (error: any) {
-      // If Supabase fails (network error, etc.), fall back to dummy mode
-      if (error.message?.includes('fetch') || error.message?.includes('network')) {
-        setUseDummyAuth(true);
-        await signUp(email, password, fullName); // Recursively call with dummy mode
-        return;
-      }
-      throw error;
+      localStorage.setItem('globetrotter_user_data', JSON.stringify(extendedUserData));
+      localStorage.setItem('globetrotter_user', JSON.stringify(mockUser));
+      localStorage.setItem('globetrotter_profile', JSON.stringify(mockProfile));
+      localStorage.setItem('globetrotter_session', JSON.stringify(mockSession));
+    } catch (error) {
+      console.error('Error storing user data:', error);
     }
+
+    setUser(mockUser);
+    setProfile(mockProfile);
+    setSession(mockSession);
+    setLoading(false);
   };
 
   const signIn = async (email: string, password: string) => {
@@ -268,6 +233,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user: mockUser,
       } as Session;
 
+      // Store in localStorage
+      try {
+        localStorage.setItem('globetrotter_user', JSON.stringify(mockUser));
+        localStorage.setItem('globetrotter_profile', JSON.stringify(mockProfile));
+        localStorage.setItem('globetrotter_session', JSON.stringify(mockSession));
+      } catch (error) {
+        console.error('Error storing user data:', error);
+      }
+
       setUser(mockUser);
       setProfile(mockProfile);
       setSession(mockSession);
@@ -280,56 +254,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
     });
 
-      if (storedUser && storedProfile) {
-        const user = JSON.parse(storedUser);
-        const profile = JSON.parse(storedProfile);
-        
-        // Update email if different
-        if (user.email !== email) {
-          user.email = email;
-          profile.email = email;
-          localStorage.setItem(DUMMY_AUTH_KEY, JSON.stringify(user));
-          localStorage.setItem(DUMMY_PROFILE_KEY, JSON.stringify(profile));
-        }
-
-        setUser(user);
-        setProfile(profile);
-        setSession({
-          access_token: 'dummy_token',
-          token_type: 'bearer',
-          expires_in: 3600,
-          expires_at: Date.now() + 3600000,
-          refresh_token: 'dummy_refresh',
-          user: user,
-        } as Session);
-      } else {
-        // Create new dummy user
-        await signUp(email, password, email.split('@')[0]);
-      }
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-    } catch (error: any) {
-      // If Supabase fails (network error, etc.), fall back to dummy mode
-      if (error.message?.includes('fetch') || error.message?.includes('network')) {
-        setUseDummyAuth(true);
-        await signIn(email, password); // Recursively call with dummy mode
-        return;
-      }
-      throw error;
-    }
+    if (error) throw error;
   };
 
   const signOut = async () => {
+    // Clear localStorage
+    try {
+      localStorage.removeItem('globetrotter_user_data');
+      localStorage.removeItem('globetrotter_user');
+      localStorage.removeItem('globetrotter_profile');
+      localStorage.removeItem('globetrotter_session');
+    } catch (error) {
+      console.error('Error clearing user data:', error);
+    }
+
     // Check if it's a mock user
-    if (user?.id === 'mock-user-id-123') {
+    if (user?.id === 'mock-user-id-123' || user?.id?.startsWith('user-')) {
       setUser(null);
       setProfile(null);
       setSession(null);
