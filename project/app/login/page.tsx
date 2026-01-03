@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -8,23 +8,34 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { signIn, user, loading: authLoading } = useAuth();
+  const { signIn } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!authLoading && user) {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await signIn(email, password);
+      toast.success('Login successful!');
       router.push('/dashboard');
+    } catch (error: any) {
+      toast.error(error.message || 'Invalid email or password');
+    } finally {
+      setLoading(false);
     }
-  }, [user, authLoading, router]);
+  };
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background Image */}
@@ -62,24 +73,7 @@ export default function LoginPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
               className="space-y-5"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!email.trim() || !password.trim()) {
-                  toast.error('Please fill in all fields');
-                  return;
-                }
-
-                setLoading(true);
-                try {
-                  await signIn(email, password);
-                  toast.success('Welcome back!');
-                  router.push('/dashboard');
-                } catch (error: any) {
-                  toast.error(error.message || 'Failed to sign in');
-                } finally {
-                  setLoading(false);
-                }
-              }}
+              onSubmit={handleSubmit}
             >
               {/* Email/Username Input */}
               <div className="space-y-2">
@@ -91,13 +85,14 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="text"
-                    placeholder="Enter your email or username"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    placeholder="demo@globetrotter.com"
                     className="pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
                     required
                   />
                 </div>
+                <p className="text-xs text-gray-500">Demo: demo@globetrotter.com</p>
               </div>
 
               {/* Password Input */}
@@ -110,6 +105,8 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -128,6 +125,7 @@ export default function LoginPage() {
                     )}
                   </button>
                 </div>
+                <p className="text-xs text-gray-500">Demo: demo123</p>
               </div>
 
               {/* Login Button */}
@@ -138,9 +136,9 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-11 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold shadow-lg transition-all duration-200"
                 >
-                  {loading ? 'Signing in...' : 'Login'}
+                  {loading ? 'Logging in...' : 'Login'}
                 </Button>
               </motion.div>
             </motion.form>

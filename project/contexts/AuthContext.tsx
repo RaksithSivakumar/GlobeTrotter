@@ -217,11 +217,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    if (useDummyAuth) {
-      // For dummy mode, accept any email/password
-      // Check if user exists in localStorage, otherwise create one
-      const storedUser = localStorage.getItem(DUMMY_AUTH_KEY);
-      const storedProfile = localStorage.getItem(DUMMY_PROFILE_KEY);
+    // Mock authentication for demo purposes
+    const mockCredentials = {
+      email: 'demo@globetrotter.com',
+      password: 'demo123',
+    };
+
+    if (email === mockCredentials.email && password === mockCredentials.password) {
+      // Create mock user and profile
+      const mockUser = {
+        id: 'mock-user-id-123',
+        email: mockCredentials.email,
+        created_at: new Date().toISOString(),
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        confirmation_sent_at: undefined,
+        recovery_sent_at: undefined,
+        email_confirmed_at: new Date().toISOString(),
+        invited_at: undefined,
+        action_link: undefined,
+        phone: undefined,
+        phone_confirmed_at: undefined,
+        phone_confirmed: false,
+        confirmed_at: new Date().toISOString(),
+        last_sign_in_at: new Date().toISOString(),
+        role: 'authenticated',
+        updated_at: new Date().toISOString(),
+        identities: [],
+        factors: undefined,
+        is_anonymous: false,
+      } as User;
+
+      const mockProfile: Profile = {
+        id: mockUser.id,
+        email: mockUser.email!,
+        full_name: 'Demo User',
+        avatar_url: null,
+        language: 'en',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const mockSession = {
+        access_token: 'mock-access-token',
+        token_type: 'bearer' as const,
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        refresh_token: 'mock-refresh-token',
+        user: mockUser,
+      } as Session;
+
+      setUser(mockUser);
+      setProfile(mockProfile);
+      setSession(mockSession);
+      return;
+    }
+
+    // Fallback to real Supabase auth for other credentials
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
       if (storedUser && storedProfile) {
         const user = JSON.parse(storedUser);
@@ -271,15 +328,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    if (useDummyAuth) {
-      localStorage.removeItem(DUMMY_AUTH_KEY);
-      localStorage.removeItem(DUMMY_PROFILE_KEY);
+    // Check if it's a mock user
+    if (user?.id === 'mock-user-id-123') {
       setUser(null);
       setProfile(null);
       setSession(null);
       return;
     }
-
+    
+    // Fallback to real Supabase auth
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
