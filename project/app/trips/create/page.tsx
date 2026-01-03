@@ -16,42 +16,54 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
+import { saveTempTrip, initializeTempStorage } from "@/lib/tempStorage";
+import { Trip } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function CreateTripPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    // Initialize temp storage with mock data
+    initializeTempStorage();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const tripData = {
-      user_id: user!.id,
+    const tripId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    const tripData: Trip = {
+      id: tripId,
+      user_id: user?.id || 'temp-user',
       name: formData.get("name") as string,
-      description: formData.get("description") as string,
+      description: (formData.get("description") as string) || null,
       start_date: formData.get("start_date") as string,
       end_date: formData.get("end_date") as string,
       total_budget: parseFloat(formData.get("budget") as string) || 0,
       cover_photo_url: (formData.get("cover_photo_url") as string) || null,
+      is_public: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase
-      .from("trips")
-      .insert(tripData)
-      .select()
-      .single();
-
-    if (error) {
+    try {
+      // Save to temporary storage
+      saveTempTrip(tripData);
+      toast.success("Trip created successfully! (Saved temporarily)");
+      router.push(`/trips`);
+    } catch (error) {
       toast.error("Failed to create trip");
+      console.error(error);
+    } finally {
       setLoading(false);
-    } else {
-      toast.success("Trip created successfully!");
-      router.push(`/trips/${data.id}/edit`);
     }
   };
 
