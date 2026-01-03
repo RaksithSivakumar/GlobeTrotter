@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       });
 
-      const { data } = supabase.auth.onAuthStateChange(
+      const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
         (_event, session) => {
           setSession(session);
           setUser(session?.user ?? null);
@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
         }
       );
-      subscription = data;
+      subscription = { unsubscribe: () => authSubscription.unsubscribe() };
     } catch (error) {
       // If Supabase fails to initialize, use dummy mode
       setUseDummyAuth(true);
@@ -147,20 +147,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         app_metadata: {},
         user_metadata: { full_name: fullName },
         aud: 'authenticated',
-        confirmation_sent_at: null,
-        recovery_sent_at: null,
+        confirmation_sent_at: undefined,
+        recovery_sent_at: undefined,
         email_confirmed_at: new Date().toISOString(),
-        invited_at: null,
+        invited_at: undefined,
         last_sign_in_at: new Date().toISOString(),
-        phone: null,
+        phone: undefined,
         confirmed_at: new Date().toISOString(),
-        email_change_sent_at: null,
-        new_email: null,
-        phone_confirmed_at: null,
-        phone_change: null,
-        phone_change_token: null,
-        email_change: null,
-        email_change_token: null,
+        email_change_sent_at: undefined,
+        new_email: undefined,
+        phone_confirmed_at: undefined,
         is_anonymous: false,
       };
 
@@ -274,11 +270,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Fallback to real Supabase auth for other credentials
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // Check if using dummy auth mode
+    if (useDummyAuth) {
+      // For dummy mode, accept any email/password
+      const storedUser = localStorage.getItem(DUMMY_AUTH_KEY);
+      const storedProfile = localStorage.getItem(DUMMY_PROFILE_KEY);
 
       if (storedUser && storedProfile) {
         const user = JSON.parse(storedUser);
@@ -309,6 +305,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Try real Supabase auth
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
