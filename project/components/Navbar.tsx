@@ -13,16 +13,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plane, User, Settings, LogOut, Home, Map, Calendar } from 'lucide-react';
+import { Plane, User, Settings, LogOut, Home, Map, Calendar, Users } from 'lucide-react';
 
 export default function Navbar() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isAdmin } = useAuth();
   const pathname = usePathname();
 
   const navLinks = [
-    { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: isAdmin ? '/admin-dashboard' : '/dashboard', label: isAdmin ? 'Admin Dashboard' : 'Dashboard', icon: Home },
     { href: '/trips', label: 'My Trips', icon: Map },
     { href: '/explore', label: 'Explore', icon: Calendar },
+    { href: '/community', label: 'Community', icon: Users },
   ];
 
   const isActive = (href: string) => pathname === href;
@@ -33,7 +34,7 @@ export default function Navbar() {
       <div className="flex justify-between items-center h-16">
 
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center space-x-2">
+        <Link href={isAdmin ? "/admin-dashboard" : "/dashboard"} className="flex items-center space-x-2">
           <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center">
             <Plane className="w-5 h-5 text-white" />
           </div>
