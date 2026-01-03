@@ -270,11 +270,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Check if using dummy auth mode
-    if (useDummyAuth) {
-      // For dummy mode, accept any email/password
-      const storedUser = localStorage.getItem(DUMMY_AUTH_KEY);
-      const storedProfile = localStorage.getItem(DUMMY_PROFILE_KEY);
+    // Fallback to real Supabase auth for other credentials
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
       if (storedUser && storedProfile) {
         const user = JSON.parse(storedUser);
