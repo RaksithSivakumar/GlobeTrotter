@@ -212,18 +212,25 @@ export default function TripsPage() {
                   </span>
 
                   <div className="flex gap-2">
-                    <IconBtn icon={<Eye />} onClick={() => router.push(`/trips/${trip.id}`)} />
-                    <IconBtn icon={<Edit />} onClick={() => router.push(`/trips/${trip.id}/edit`)} />
                     <IconBtn danger icon={<Trash2 />} onClick={() => setDeleteDialog(trip.id)} />
                   </div>
                 </div>
 
-                <Button
-                  onClick={() => router.push(`/itinerary?tripId=${trip.id}`)}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  Itinerary Plan
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => router.push(`/trips/${trip.id}/timeline`)}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    View Timeline
+                  </Button>
+                  <Button
+                    onClick={() => router.push(`/itinerary?tripId=${trip.id}`)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Edit Plan
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
