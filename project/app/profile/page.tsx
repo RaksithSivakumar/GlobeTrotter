@@ -20,15 +20,40 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-// Mock user data
-const initialUserData = {
-  fullName: 'Sarah Johnson',
-  email: 'sarah.johnson@example.com',
-  city: 'San Francisco',
-  country: 'United States',
-  aboutMe: 'Passionate traveler exploring the world one destination at a time. Love adventure, culture, and meeting new people.',
-  avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-  memberSince: 'January 2023',
+// Helper function to get user data from localStorage or use defaults
+const getUserDataFromStorage = () => {
+  try {
+    const storedData = localStorage.getItem('globetrotter_user_data');
+    const storedProfile = localStorage.getItem('globetrotter_profile');
+    
+    if (storedData && storedProfile) {
+      const userData = JSON.parse(storedData);
+      const profile = JSON.parse(storedProfile);
+      
+      return {
+        fullName: userData.fullName || profile.full_name || 'User',
+        email: userData.email || profile.email || '',
+        city: userData.city || '',
+        country: userData.country || '',
+        aboutMe: userData.additionalInfo || 'Passionate traveler exploring the world one destination at a time. Love adventure, culture, and meeting new people.',
+        avatarUrl: userData.avatarUrl || profile.avatar_url || '',
+        memberSince: new Date(profile.created_at || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      };
+    }
+  } catch (error) {
+    console.error('Error loading user data from storage:', error);
+  }
+  
+  // Default fallback data
+  return {
+    fullName: 'Sarah Johnson',
+    email: 'sarah.johnson@example.com',
+    city: 'San Francisco',
+    country: 'United States',
+    aboutMe: 'Passionate traveler exploring the world one destination at a time. Love adventure, culture, and meeting new people.',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
+    memberSince: 'January 2023',
+  };
 };
 
 // Mock statistics
@@ -109,8 +134,8 @@ const itemVariants = {
 
 export default function ProfilePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [userData, setUserData] = useState(initialUserData);
-  const [editedData, setEditedData] = useState(initialUserData);
+  const [userData, setUserData] = useState(() => getUserDataFromStorage());
+  const [editedData, setEditedData] = useState(() => getUserDataFromStorage());
 
   const handleOpenDialog = () => {
     setEditedData(userData);
@@ -124,6 +149,26 @@ export default function ProfilePage() {
 
   const handleSave = () => {
     setUserData(editedData);
+    
+    // Update localStorage with new data
+    try {
+      const storedData = localStorage.getItem('globetrotter_user_data');
+      if (storedData) {
+        const userDataObj = JSON.parse(storedData);
+        const updatedData = {
+          ...userDataObj,
+          fullName: editedData.fullName,
+          city: editedData.city,
+          country: editedData.country,
+          avatarUrl: editedData.avatarUrl,
+          additionalInfo: editedData.aboutMe,
+        };
+        localStorage.setItem('globetrotter_user_data', JSON.stringify(updatedData));
+      }
+    } catch (error) {
+      console.error('Error saving user data:', error);
+    }
+    
     setIsDialogOpen(false);
     // In a real app, you would make an API call here
   };

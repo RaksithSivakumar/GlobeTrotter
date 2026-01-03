@@ -12,16 +12,56 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
+interface LoginErrors {
+  email?: string;
+  password?: string;
+}
+
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<LoginErrors>({});
   const { signIn } = useAuth();
   const router = useRouter();
 
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (errors.email) {
+      setErrors(prev => ({ ...prev, email: undefined }));
+    }
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (errors.password) {
+      setErrors(prev => ({ ...prev, password: undefined }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: LoginErrors = {};
+
+    if (!email.trim()) {
+      newErrors.email = 'Email or username is required';
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -34,7 +74,17 @@ export default function LoginPage() {
         router.push('/dashboard');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Invalid email or password');
+      const errorMessage = error.message || 'Invalid email or password';
+      toast.error(errorMessage);
+      
+      // Set field-specific errors if applicable
+      if (errorMessage.toLowerCase().includes('password')) {
+        setErrors({ password: errorMessage });
+      } else if (errorMessage.toLowerCase().includes('email') || errorMessage.toLowerCase().includes('user')) {
+        setErrors({ email: errorMessage });
+      } else {
+        setErrors({ email: errorMessage, password: errorMessage });
+      }
     } finally {
       setLoading(false);
     }
@@ -81,7 +131,7 @@ export default function LoginPage() {
               {/* Email/Username Input */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-gray-700 font-medium">
-                  Email or Username
+                  Email or Username <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -89,10 +139,11 @@ export default function LoginPage() {
                     id="email"
                     type="text"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => handleEmailChange(e.target.value)}
                     placeholder="demo@globetrotter.com"
-                    className="pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
-                    required
+                    className={`pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 ${
+                      errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
                   />
                 </div>
                 <p className="text-xs text-gray-500">Demo: demo@globetrotter.com</p>
@@ -102,7 +153,7 @@ export default function LoginPage() {
               {/* Password Input */}
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-gray-700 font-medium">
-                  Password
+                  Password <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
@@ -110,10 +161,11 @@ export default function LoginPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
                     placeholder="Enter your password"
-                    className="pl-10 pr-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
-                    required
+                    className={`pl-10 pr-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 ${
+                      errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
                   />
                   <button
                     type="button"
