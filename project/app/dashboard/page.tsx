@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { Trip, City } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
-import Navbar from "@/components/Navbar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import Navbar from '@/components/Navbar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/lib/supabase';
+import { Trip, City } from '@/lib/types';
 import {
   Plus,
   Map,
@@ -30,19 +30,11 @@ import {
   Sparkles,
   Compass,
   Rocket,
-} from "lucide-react";
-import Link from "next/link";
-
-export const dynamic = 'force-dynamic';
-import Navbar from '@/components/Navbar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/lib/supabase';
-import { Trip, City } from '@/lib/types';
-import { Plus, Map, DollarSign, Calendar, TrendingUp, Users } from 'lucide-react';
+} from 'lucide-react';
 import Link from 'next/link';
 import { format, parseISO, differenceInDays } from 'date-fns';
-export const dynamic = "force-dynamic";
+
+export const dynamic = 'force-dynamic';
 
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -205,13 +197,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
-  );
-}
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-100 via-blue-50 to-white py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
+
+        {/* Hero Section */}
+        <section className="relative bg-gradient-to-br from-blue-100 via-blue-50 to-white py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+          <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <div>
@@ -253,11 +242,11 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Stats Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+        {/* Stats Section */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 auto-rows-[26rem]">
             {/* Stat 1 */}
@@ -344,11 +333,11 @@ export default function Dashboard() {
             </Card>
           </div>
         </div>
-      </section>
+        </section>
 
-      {/* Mission Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
+        {/* Mission Section */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+          <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <p className="text-sm font-semibold text-gray-500 mb-4">
@@ -383,12 +372,12 @@ export default function Dashboard() {
               />
             </div>
           </div>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Routes Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
+        {/* Routes Section */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+          <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-12">
             <h2 className="text-5xl font-black text-gray-900">ROUTES</h2>
             <div className="flex gap-3">
@@ -443,12 +432,12 @@ export default function Dashboard() {
                 </Card>
               ))}
           </div>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* What We Do Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
+        {/* What We Do Section */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+          <div className="max-w-7xl mx-auto">
           <h2 className="text-5xl font-black text-gray-900 mb-16">
             WHAT WE DO
           </h2>
@@ -525,13 +514,13 @@ export default function Dashboard() {
               </Link>
             </Card>
           </div>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Your Trips Section */}
-      {trips.length > 0 && (
-        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-          <div className="max-w-7xl mx-auto">
+        {/* Your Trips Section */}
+        {trips.length > 0 && (
+          <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+            <div className="max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-12">
               <h2 className="text-5xl font-black text-gray-900">YOUR TRIPS</h2>
               <Link href="/trips">
@@ -593,14 +582,14 @@ export default function Dashboard() {
                 </Card>
               ))}
             </div>
-          </div>
-        </section>
-      )}
+            </div>
+          </section>
+        )}
 
-      {/* CTA Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-900 via-gray-800 to-black">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        {/* CTA Section */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-900 via-gray-800 to-black">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             {/* Text Content */}
             <div className="text-left">
               <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
@@ -710,9 +699,10 @@ export default function Dashboard() {
                 <p className="text-sm text-white/70 mt-1">Journeys created</p>
               </div>
             </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
     </div>
   );
 }
