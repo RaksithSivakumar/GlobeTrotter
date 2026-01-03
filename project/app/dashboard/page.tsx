@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { Trip, City } from '@/lib/types';
-import { Plus, Map, DollarSign, Calendar, TrendingUp } from 'lucide-react';
+import { Plus, Map, DollarSign, Calendar, TrendingUp, Users } from 'lucide-react';
 import Link from 'next/link';
 import { format, parseISO, differenceInDays } from 'date-fns';
 
@@ -71,6 +71,41 @@ export default function Dashboard() {
             Welcome back, {profile?.full_name || 'Traveler'}!
           </h1>
           <p className="text-gray-600">Ready to plan your next adventure?</p>
+        </div>
+
+        {/* Quick Access Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <Link href="/calendar-view">
+            <Card className="hover:shadow-lg transition-all cursor-pointer bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Calendar View</h3>
+                    <p className="text-sm text-gray-600">View your trips and activities on a calendar</p>
+                  </div>
+                  <div className="bg-emerald-500 p-3 rounded-lg">
+                    <Calendar className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/community">
+            <Card className="hover:shadow-lg transition-all cursor-pointer bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Community</h3>
+                    <p className="text-sm text-gray-600">Connect with fellow travelers</p>
+                  </div>
+                  <div className="bg-blue-500 p-3 rounded-lg">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
