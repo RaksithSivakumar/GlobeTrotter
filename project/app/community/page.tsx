@@ -50,7 +50,7 @@ interface Comment {
 }
 
 export default function CommunityPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
   const [selectedTrip, setSelectedTrip] = useState<string>('');
@@ -228,13 +228,15 @@ export default function CommunityPage() {
                 </p>
               </div>
             </div>
-            <Button
-              onClick={() => setShowCreatePost(!showCreatePost)}
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
-            >
-              <Plane className="w-4 h-4 mr-2" />
-              Share Your Story
-            </Button>
+            {!isAdmin && (
+              <Button
+                onClick={() => setShowCreatePost(!showCreatePost)}
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
+              >
+                <Plane className="w-4 h-4 mr-2" />
+                Share Your Story
+              </Button>
+            )}
           </div>
 
           {/* Search and Filter */}

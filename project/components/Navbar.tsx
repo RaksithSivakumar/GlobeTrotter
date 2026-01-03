@@ -22,7 +22,7 @@ export default function Navbar() {
 
   const navLinks = useMemo(() => [
     { href: isAdmin ? '/admin-dashboard' : '/dashboard', label: isAdmin ? 'Admin Dashboard' : 'Dashboard', icon: Home },
-    { href: '/trips', label: 'My Trips', icon: Map },
+    ...(isAdmin ? [] : [{ href: '/trips', label: 'My Trips', icon: Map }]), // Hide "My Trips" for admin
     { href: '/explore', label: 'Explore', icon: Calendar },
     { href: '/community', label: 'Community', icon: Users },
   ], [isAdmin]);

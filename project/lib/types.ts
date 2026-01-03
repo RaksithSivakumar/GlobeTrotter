@@ -18,6 +18,8 @@ export interface Trip {
   cover_photo_url: string | null;
   is_public: boolean;
   total_budget: number;
+  city: string | null;
+  country: string | null;
   created_at: string;
   updated_at: string;
 }

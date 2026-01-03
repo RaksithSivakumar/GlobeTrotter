@@ -50,6 +50,8 @@ export default function CreateTripPage() {
       total_budget: parseFloat(formData.get("budget") as string) || 0,
       cover_photo_url: (formData.get("cover_photo_url") as string) || null,
       is_public: false,
+      city: (formData.get("city") as string) || null,
+      country: (formData.get("country") as string) || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -123,6 +125,23 @@ export default function CreateTripPage() {
                 </Field>
                 <Field label="End Date *">
                   <Input name="end_date" type="date" required />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="City *">
+                  <Input
+                    name="city"
+                    placeholder="e.g., Paris"
+                    required
+                  />
+                </Field>
+                <Field label="Country *">
+                  <Input
+                    name="country"
+                    placeholder="e.g., France"
+                    required
+                  />
                 </Field>
               </div>
 
