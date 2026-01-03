@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { Trip, Stop, Activity, Profile } from '@/lib/types';
+import { saveTempTrip } from '@/lib/tempStorage';
 import { Plane, Calendar, MapPin, DollarSign, Clock, Copy, ArrowLeft } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -15,20 +20,26 @@ import Link from 'next/link';
 export default function PublicTripPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const tripId = params.id as string;
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [stops, setStops] = useState<(Stop & { activities: Activity[] })[]>([]);
   const [author, setAuthor] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateStartDate, setDuplicateStartDate] = useState('');
+  const [duplicateEndDate, setDuplicateEndDate] = useState('');
 
   useEffect(() => {
     if (tripId) {
       fetchTripData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
 
   const fetchTripData = async () => {
+    // Try Supabase first
     const { data: tripData } = await supabase
       .from('trips')
       .select('*')
@@ -36,20 +47,47 @@ export default function PublicTripPage() {
       .eq('is_public', true)
       .maybeSingle();
 
-    if (!tripData) {
+    let foundTrip = tripData;
+
+    // If not found in Supabase, check temp storage
+    if (!foundTrip) {
+      const { getTempTrip } = await import('@/lib/tempStorage');
+      const tempTrip = getTempTrip(tripId);
+      if (tempTrip && tempTrip.is_public) {
+        foundTrip = tempTrip;
+      }
+    }
+
+    if (!foundTrip) {
       setLoading(false);
       return;
     }
 
-    setTrip(tripData);
+    setTrip(foundTrip);
 
+    // Try to get author from Supabase
     const { data: authorData } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', tripData.user_id)
+      .eq('id', foundTrip.user_id)
       .maybeSingle();
 
-    if (authorData) setAuthor(authorData);
+    if (authorData) {
+      setAuthor(authorData);
+    } else {
+      // Try to get from localStorage if it's a temp trip
+      try {
+        const storedProfile = localStorage.getItem('globetrotter_profile');
+        if (storedProfile) {
+          const profile = JSON.parse(storedProfile);
+          if (profile.id === foundTrip.user_id) {
+            setAuthor(profile);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading author from storage:', error);
+      }
+    }
 
     const { data: stopsData } = await supabase
       .from('stops')
@@ -57,7 +95,7 @@ export default function PublicTripPage() {
       .eq('trip_id', tripId)
       .order('order_index');
 
-    if (stopsData) {
+    if (stopsData && stopsData.length > 0) {
       const stopsWithActivities = await Promise.all(
         stopsData.map(async (stop) => {
           const { data: activities } = await supabase
@@ -70,14 +108,101 @@ export default function PublicTripPage() {
         })
       );
       setStops(stopsWithActivities);
+    } else {
+      // Add mock itinerary data if no stops found
+      const mockStops = [
+        {
+          id: 'mock-stop-1',
+          trip_id: foundTrip.id,
+          city_id: 'mock-city-1',
+          order_index: 0,
+          start_date: foundTrip.start_date,
+          end_date: foundTrip.end_date,
+          notes: null,
+          created_at: new Date().toISOString(),
+          city: { id: 'mock-city-1', name: foundTrip.city || 'Destination', country: foundTrip.country || 'Country', region: null, cost_index: 3, popularity_score: 85, description: 'Beautiful destination', image_url: foundTrip.cover_photo_url, created_at: new Date().toISOString() },
+          activities: [
+            {
+              id: 'mock-activity-1',
+              stop_id: 'mock-stop-1',
+              activity_template_id: null,
+              name: 'City Tour',
+              description: 'Explore the main attractions',
+              category: 'sightseeing',
+              cost: 50,
+              duration_hours: 3,
+              activity_date: foundTrip.start_date,
+              activity_time: '10:00',
+              order_index: 0,
+              created_at: new Date().toISOString(),
+            },
+            {
+              id: 'mock-activity-2',
+              stop_id: 'mock-stop-1',
+              activity_template_id: null,
+              name: 'Local Cuisine Experience',
+              description: 'Try authentic local dishes',
+              category: 'food',
+              cost: 75,
+              duration_hours: 2,
+              activity_date: foundTrip.start_date,
+              activity_time: '19:00',
+              order_index: 1,
+              created_at: new Date().toISOString(),
+            },
+          ],
+        },
+      ];
+      setStops(mockStops);
     }
 
     setLoading(false);
   };
 
+  const handleDuplicateTrip = () => {
+    if (!trip || !user) {
+      toast.error('Please sign in to duplicate trips');
+      router.push('/login');
+      return;
+    }
+    
+    if (!duplicateStartDate || !duplicateEndDate) {
+      toast.error('Please select both start and end dates');
+      return;
+    }
+
+    if (new Date(duplicateEndDate) < new Date(duplicateStartDate)) {
+      toast.error('End date must be after start date');
+      return;
+    }
+
+    const newTripId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const duplicatedTrip: Trip = {
+      ...trip,
+      id: newTripId,
+      user_id: user.id,
+      start_date: duplicateStartDate,
+      end_date: duplicateEndDate,
+      is_public: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    saveTempTrip(duplicatedTrip);
+    toast.success('Trip duplicated and added to My Trips!');
+    setShowDuplicateDialog(false);
+    setDuplicateStartDate('');
+    setDuplicateEndDate('');
+    router.push('/trips');
+  };
+
   const copyTrip = () => {
-    toast.success('Trip copied! Sign in to customize it for yourself');
-    router.push('/');
+    if (!user) {
+      toast.error('Please sign in to duplicate trips');
+      router.push('/login');
+      return;
+    }
+    setShowDuplicateDialog(true);
   };
 
   const shareTrip = () => {
@@ -129,10 +254,12 @@ export default function PublicTripPage() {
               <Button variant="outline" size="sm" onClick={shareTrip}>
                 Share
               </Button>
-              <Button size="sm" onClick={copyTrip} className="bg-gradient-to-r from-orange-500 to-cyan-600">
-                <Copy className="w-4 h-4 mr-2" />
-                Copy Trip
-              </Button>
+              {user && (
+                <Button size="sm" onClick={copyTrip} className="bg-gradient-to-r from-orange-500 to-cyan-600">
+                  <Copy className="w-4 h-4 mr-2" />
+                  Duplicate Trip
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -175,8 +302,17 @@ export default function PublicTripPage() {
         </div>
 
         <div className="space-y-6">
-          {stops.map((stop, index) => (
-            <Card key={stop.id} className="overflow-hidden">
+          {stops.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No itinerary available</h3>
+                <p className="text-gray-600">This trip doesn't have a detailed itinerary yet.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            stops.map((stop, index) => (
+              <Card key={stop.id} className="overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-orange-100 to-cyan-100">
                 <div className="flex items-start justify-between">
                   <div>
@@ -226,8 +362,9 @@ export default function PublicTripPage() {
                   </div>
                 )}
               </CardContent>
-            </Card>
-          ))}
+              </Card>
+            ))
+          )}
         </div>
 
         <Card className="mt-8 bg-gradient-to-r from-orange-500 to-cyan-600 text-white">
@@ -238,25 +375,82 @@ export default function PublicTripPage() {
                 Create an account to copy and customize this trip for yourself
               </p>
               <div className="flex gap-4 justify-center">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  onClick={copyTrip}
-                  className="bg-white text-orange-600 hover:bg-gray-100"
-                >
-                  <Copy className="w-5 h-5 mr-2" />
-                  Copy This Trip
-                </Button>
-                <Link href="/">
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                    Sign Up Free
+                {user ? (
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    onClick={copyTrip}
+                    className="bg-white text-orange-600 hover:bg-gray-100"
+                  >
+                    <Copy className="w-5 h-5 mr-2" />
+                    Duplicate This Trip
                   </Button>
-                </Link>
+                ) : (
+                  <>
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      onClick={() => router.push('/login')}
+                      className="bg-white text-orange-600 hover:bg-gray-100"
+                    >
+                      <Copy className="w-5 h-5 mr-2" />
+                      Sign In to Duplicate
+                    </Button>
+                    <Link href="/register">
+                      <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                        Sign Up Free
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
       </main>
+
+      {/* Duplicate Trip Dialog */}
+      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Duplicate This Trip</DialogTitle>
+            <DialogDescription>
+              Create a copy of "{trip?.name}" with your own dates. The trip will be added to your My Trips.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="start-date">Start Date *</Label>
+              <Input
+                id="start-date"
+                type="date"
+                value={duplicateStartDate}
+                onChange={(e) => setDuplicateStartDate(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="end-date">End Date *</Label>
+              <Input
+                id="end-date"
+                type="date"
+                value={duplicateEndDate}
+                onChange={(e) => setDuplicateEndDate(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDuplicateDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleDuplicateTrip} className="bg-blue-600 hover:bg-blue-700">
+              <Copy className="w-4 h-4 mr-2" />
+              Duplicate Trip
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

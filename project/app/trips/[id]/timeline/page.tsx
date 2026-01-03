@@ -19,10 +19,15 @@ import {
   DollarSign,
   Search,
   Filter,
-  SortAsc
+  SortAsc,
+  Globe
 } from 'lucide-react';
-import { format, parseISO, isBefore, isAfter } from 'date-fns';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/contexts/AuthContext';
+import { saveTempTrip } from '@/lib/tempStorage';
 import { toast } from 'sonner';
+import { format, parseISO, isBefore, isAfter } from 'date-fns';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,7 +49,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -57,6 +61,7 @@ import {
 function TripTimelineContent() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const tripId = params.id as string;
   
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -67,6 +72,33 @@ function TripTimelineContent() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState<ItinerarySectionData | null>(null);
   const [editForm, setEditForm] = useState<ItinerarySectionData | null>(null);
+
+  const togglePublic = async (checked: boolean) => {
+    if (!trip) return;
+    
+    try {
+      const updatedTrip = { ...trip, is_public: checked };
+      
+      // Try to update in Supabase first
+      if (user && !trip.id.startsWith('temp-') && !trip.id.startsWith('mock-')) {
+        const { error } = await supabase
+          .from('trips')
+          .update({ is_public: checked })
+          .eq('id', trip.id);
+
+        if (error) throw error;
+      }
+      
+      // Update in temporary storage
+      saveTempTrip(updatedTrip);
+      setTrip(updatedTrip);
+      
+      toast.success(checked ? 'Trip is now public' : 'Trip is now private');
+    } catch (error) {
+      console.error('Error updating trip visibility:', error);
+      toast.error('Failed to update trip visibility');
+    }
+  };
 
   useEffect(() => {
     initializeTempStorage();
@@ -244,6 +276,17 @@ function TripTimelineContent() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg">
+                <Globe className="w-4 h-4 text-slate-600" />
+                <Label htmlFor="public-toggle" className="text-sm text-slate-700 cursor-pointer">
+                  {trip.is_public ? 'Public' : 'Private'}
+                </Label>
+                <Switch
+                  id="public-toggle"
+                  checked={trip.is_public || false}
+                  onCheckedChange={togglePublic}
+                />
+              </div>
               <Link href={`/itinerary?tripId=${tripId}`}>
                 <Button variant="outline" size="sm">
                   <Edit className="w-4 h-4 mr-2" />
