@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -58,10 +59,35 @@ interface PopularActivity {
 }
 
 export default function AdminDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin, loading } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('analytics');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        router.push('/login');
+      } else if (!isAdmin) {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, isAdmin, loading, router]);
+
+  // Show loading while checking auth
+  if (loading || !user || !isAdmin) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative inline-block">
+            <div className="animate-spin rounded-full h-20 w-20 border-4 border-blue-600 border-t-transparent"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Sample data
   const users: User[] = [
@@ -131,16 +157,16 @@ export default function AdminDashboard() {
   }, [searchQuery]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+    <div className="min-h-screen bg-white text-gray-900">
       <Navbar />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
             Admin Panel
           </h1>
-          <p className="text-gray-400">Manage users, view trends, and analyze data</p>
+          <p className="text-gray-600">Manage users, view trends, and analyze data</p>
         </div>
 
         {/* Search and Action Bar */}
@@ -152,13 +178,13 @@ export default function AdminDashboard() {
               placeholder="Search bar ......"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 pr-4 py-3 bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-blue-500"
+              className="pl-12 pr-4 py-3 bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500"
             />
           </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
-              className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700"
+              className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               <Filter className="w-4 h-4 mr-2" />
               Group by
@@ -166,14 +192,14 @@ export default function AdminDashboard() {
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700"
+              className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               <Filter className="w-4 h-4 mr-2" />
               Filter
             </Button>
             <Button
               variant="outline"
-              className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700"
+              className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               <ArrowUpDown className="w-4 h-4 mr-2" />
               Sort by...
@@ -182,7 +208,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="mb-6 flex gap-2 border-b border-gray-700">
+        <div className="mb-6 flex gap-2 border-b border-gray-200">
           {[
             { id: 'users' as ActiveTab, label: 'Manage Users', icon: Users },
             { id: 'cities' as ActiveTab, label: 'Popular Cities', icon: MapPin },
@@ -196,8 +222,8 @@ export default function AdminDashboard() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-6 py-3 flex items-center gap-2 border-b-2 transition-colors ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -219,15 +245,15 @@ export default function AdminDashboard() {
 
           {/* Right Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-white border-gray-200">
               <CardHeader>
-                <CardTitle className="text-white">Information</CardTitle>
+                <CardTitle className="text-gray-900">Information</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 text-sm text-gray-400">
+              <CardContent className="space-y-4 text-sm text-gray-600">
                 {activeTab === 'users' && (
                   <>
                     <div>
-                      <p className="font-semibold text-gray-300 mb-1">Manage</p>
+                      <p className="font-semibold text-gray-900 mb-1">Manage</p>
                       <p>This Section is responsible for managing the users and their actions.</p>
                       <p className="mt-2">This section gives the admin access to view all trips made by the user. Also other functionalities are welcome.</p>
                     </div>
@@ -236,7 +262,7 @@ export default function AdminDashboard() {
                 {activeTab === 'cities' && (
                   <>
                     <div>
-                      <p className="font-semibold text-gray-300 mb-1">Popular Cities</p>
+                      <p className="font-semibold text-gray-900 mb-1">Popular Cities</p>
                       <p>Lists all the popular cities where the users are visiting based on the current user trends.</p>
                     </div>
                   </>
@@ -244,7 +270,7 @@ export default function AdminDashboard() {
                 {activeTab === 'activities' && (
                   <>
                     <div>
-                      <p className="font-semibold text-gray-300 mb-1">Popular Activities</p>
+                      <p className="font-semibold text-gray-900 mb-1">Popular Activities</p>
                       <p>List all the popular activities that the users are doing based on the current user trend data.</p>
                     </div>
                   </>
@@ -252,7 +278,7 @@ export default function AdminDashboard() {
                 {activeTab === 'analytics' && (
                   <>
                     <div>
-                      <p className="font-semibold text-gray-300 mb-1">User Trends</p>
+                      <p className="font-semibold text-gray-900 mb-1">User Trends</p>
                       <p>This section will major focus on providing analysis across various points and give useful information to the user.</p>
                     </div>
                   </>
@@ -268,9 +294,9 @@ export default function AdminDashboard() {
 
 function ManageUsersSection({ users }: { users: User[] }) {
   return (
-    <Card className="bg-gray-800 border-gray-700">
+    <Card className="bg-white border-gray-200">
       <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
+        <CardTitle className="text-gray-900 flex items-center gap-2">
           <Users className="w-6 h-6" />
           Manage Users
         </CardTitle>
@@ -280,7 +306,7 @@ function ManageUsersSection({ users }: { users: User[] }) {
           {users.map((user) => (
             <div
               key={user.id}
-              className="bg-gray-700/50 rounded-lg p-4 hover:bg-gray-700 transition-colors"
+              className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -288,8 +314,8 @@ function ManageUsersSection({ users }: { users: User[] }) {
                     {user.name.charAt(0)}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">{user.name}</h3>
-                    <p className="text-sm text-gray-400">{user.email}</p>
+                    <h3 className="font-semibold text-gray-900">{user.name}</h3>
+                    <p className="text-sm text-gray-600">{user.email}</p>
                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
@@ -300,7 +326,7 @@ function ManageUsersSection({ users }: { users: User[] }) {
                         ${user.totalSpent}
                       </span>
                       <span className={`px-2 py-0.5 rounded ${
-                        user.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                        user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
                       }`}>
                         {user.status}
                       </span>
@@ -308,13 +334,13 @@ function ManageUsersSection({ users }: { users: User[] }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-red-400">
+                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600">
                     <Trash2 className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
                     <MoreVertical className="w-4 h-4" />
                   </Button>
                 </div>
@@ -329,9 +355,9 @@ function ManageUsersSection({ users }: { users: User[] }) {
 
 function PopularCitiesSection({ cities }: { cities: PopularCity[] }) {
   return (
-    <Card className="bg-gray-800 border-gray-700">
+    <Card className="bg-white border-gray-200">
       <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
+        <CardTitle className="text-gray-900 flex items-center gap-2">
           <MapPin className="w-6 h-6" />
           Popular Cities
         </CardTitle>
@@ -341,7 +367,7 @@ function PopularCitiesSection({ cities }: { cities: PopularCity[] }) {
           {cities.map((city, index) => (
             <div
               key={city.id}
-              className="bg-gray-700/50 rounded-lg p-4 hover:bg-gray-700 transition-colors"
+              className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -349,16 +375,16 @@ function PopularCitiesSection({ cities }: { cities: PopularCity[] }) {
                     {index + 1}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">{city.name}</h3>
-                    <p className="text-sm text-gray-400">{city.country}</p>
+                    <h3 className="font-semibold text-gray-900">{city.name}</h3>
+                    <p className="text-sm text-gray-600">{city.country}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-white">{city.visits}</div>
-                  <div className="text-xs text-gray-400">visits</div>
+                  <div className="text-lg font-bold text-gray-900">{city.visits}</div>
+                  <div className="text-xs text-gray-500">visits</div>
                   <div className={`flex items-center gap-1 mt-1 ${
-                    city.trend === 'up' ? 'text-green-400' :
-                    city.trend === 'down' ? 'text-red-400' : 'text-gray-400'
+                    city.trend === 'up' ? 'text-green-600' :
+                    city.trend === 'down' ? 'text-red-600' : 'text-gray-500'
                   }`}>
                     <TrendingUp className={`w-3 h-3 ${city.trend === 'down' ? 'rotate-180' : ''}`} />
                     <span className="text-xs">{city.percentage}%</span>
@@ -375,9 +401,9 @@ function PopularCitiesSection({ cities }: { cities: PopularCity[] }) {
 
 function PopularActivitiesSection({ activities }: { activities: PopularActivity[] }) {
   return (
-    <Card className="bg-gray-800 border-gray-700">
+    <Card className="bg-white border-gray-200">
       <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
+        <CardTitle className="text-gray-900 flex items-center gap-2">
           <Activity className="w-6 h-6" />
           Popular Activities
         </CardTitle>
@@ -387,7 +413,7 @@ function PopularActivitiesSection({ activities }: { activities: PopularActivity[
           {activities.map((activity, index) => (
             <div
               key={activity.id}
-              className="bg-gray-700/50 rounded-lg p-4 hover:bg-gray-700 transition-colors"
+              className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -395,16 +421,16 @@ function PopularActivitiesSection({ activities }: { activities: PopularActivity[
                     {index + 1}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">{activity.name}</h3>
-                    <p className="text-sm text-gray-400">{activity.category}</p>
+                    <h3 className="font-semibold text-gray-900">{activity.name}</h3>
+                    <p className="text-sm text-gray-600">{activity.category}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-white">{activity.participants}</div>
-                  <div className="text-xs text-gray-400">participants</div>
+                  <div className="text-lg font-bold text-gray-900">{activity.participants}</div>
+                  <div className="text-xs text-gray-500">participants</div>
                   <div className={`flex items-center gap-1 mt-1 ${
-                    activity.trend === 'up' ? 'text-green-400' :
-                    activity.trend === 'down' ? 'text-red-400' : 'text-gray-400'
+                    activity.trend === 'up' ? 'text-green-600' :
+                    activity.trend === 'down' ? 'text-red-600' : 'text-gray-500'
                   }`}>
                     <TrendingUp className={`w-3 h-3 ${activity.trend === 'down' ? 'rotate-180' : ''}`} />
                     <span className="text-xs">{activity.percentage}%</span>
@@ -431,9 +457,9 @@ function AnalyticsSection({
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   return (
-    <Card className="bg-gray-800 border-gray-700">
+    <Card className="bg-white border-gray-200">
       <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
+        <CardTitle className="text-gray-900 flex items-center gap-2">
           <BarChart3 className="w-6 h-6" />
           User Trends and Analytics
         </CardTitle>
@@ -441,8 +467,8 @@ function AnalyticsSection({
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Pie Chart */}
-          <div className="bg-gray-700/30 rounded-lg p-4">
-            <h3 className="text-white font-semibold mb-4">User Distribution</h3>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 className="text-gray-900 font-semibold mb-4">User Distribution</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <RechartsPieChart>
@@ -461,7 +487,7 @@ function AnalyticsSection({
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px', color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', color: '#111827' }}
                   />
                   <Legend />
                 </RechartsPieChart>
@@ -470,17 +496,17 @@ function AnalyticsSection({
           </div>
 
           {/* Line Chart */}
-          <div className="bg-gray-700/30 rounded-lg p-4">
-            <h3 className="text-white font-semibold mb-4">User Growth Trend</h3>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 className="text-gray-900 font-semibold mb-4">User Growth Trend</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <RechartsLineChart data={lineData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="month" stroke="#6b7280" />
+                  <YAxis stroke="#6b7280" />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px', color: '#fff' }}
-                    labelStyle={{ color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', color: '#111827' }}
+                    labelStyle={{ color: '#111827' }}
                   />
                   <Line 
                     type="monotone" 
@@ -495,17 +521,17 @@ function AnalyticsSection({
           </div>
 
           {/* Bar Chart */}
-          <div className="bg-gray-700/30 rounded-lg p-4">
-            <h3 className="text-white font-semibold mb-4">Activity Overview</h3>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 className="text-gray-900 font-semibold mb-4">Activity Overview</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="category" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="category" stroke="#6b7280" />
+                  <YAxis stroke="#6b7280" />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px', color: '#fff' }}
-                    labelStyle={{ color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', color: '#111827' }}
+                    labelStyle={{ color: '#111827' }}
                   />
                   <Bar dataKey="value" fill="#f59e0b" radius={[8, 8, 0, 0]} />
                 </BarChart>
@@ -514,8 +540,8 @@ function AnalyticsSection({
           </div>
 
           {/* Stats List */}
-          <div className="bg-gray-700/30 rounded-lg p-4">
-            <h3 className="text-white font-semibold mb-4">Key Metrics</h3>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 className="text-gray-900 font-semibold mb-4">Key Metrics</h3>
             <div className="space-y-3">
               {[
                 { label: 'Total Users', value: '1,234', trend: '+12%' },
@@ -523,12 +549,12 @@ function AnalyticsSection({
                 { label: 'Total Revenue', value: '$89K', trend: '+15%' },
                 { label: 'Avg Trip Cost', value: '$1,250', trend: '+5%' },
               ].map((metric, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
                   <div>
-                    <p className="text-gray-400 text-sm">{metric.label}</p>
-                    <p className="text-white font-bold text-lg">{metric.value}</p>
+                    <p className="text-gray-600 text-sm">{metric.label}</p>
+                    <p className="text-gray-900 font-bold text-lg">{metric.value}</p>
                   </div>
-                  <span className="text-green-400 text-sm font-semibold">{metric.trend}</span>
+                  <span className="text-green-600 text-sm font-semibold">{metric.trend}</span>
                 </div>
               ))}
             </div>

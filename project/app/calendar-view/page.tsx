@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Navbar from '@/components/Navbar';
 import { MapPin, ChevronLeft, ChevronRight, DollarSign, Plane, Camera, Compass, Luggage, Calendar as CalendarIcon, Globe, Search, X, Filter, ArrowUpDown } from 'lucide-react';
 
 type TravelItem = {
@@ -238,30 +239,25 @@ export default function TravelCalendar() {
   const totalActivities = filteredTravelData.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 text-gray-900 p-6 relative overflow-hidden">
-      {/* Decorative travel elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200/30 to-cyan-200/30 rounded-full blur-3xl -z-0"></div>
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-teal-200/30 to-emerald-200/30 rounded-full blur-3xl -z-0"></div>
-      
-      <div className="max-w-7xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-3 rounded-2xl shadow-lg">
-                <Globe className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 bg-clip-text text-transparent mb-1">
-                  GlobeTrotter
-                </h1>
-                <p className="text-gray-600 flex items-center gap-2">
-                  <Compass size={14} className="text-blue-500" />
-                  Track your adventures around the world
-                </p>
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 text-gray-900 relative overflow-hidden">
+      <Navbar />
+      <div className="p-6">
+        {/* Decorative travel elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200/30 to-cyan-200/30 rounded-full blur-3xl -z-0"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-teal-200/30 to-emerald-200/30 rounded-full blur-3xl -z-0"></div>
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 bg-clip-text text-transparent mb-1">
+                    Travel Calendar
+                  </h1>
+                </div>
               </div>
             </div>
-          </div>
 
           {/* Search, Filter, and Sort Bar */}
           <div className="mb-6 flex flex-col md:flex-row gap-4 items-stretch md:items-center">
@@ -286,23 +282,116 @@ export default function TravelCalendar() {
             </div>
 
             {/* Filter and Sort Buttons */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`px-4 py-3 border-2 rounded-xl text-sm transition-all font-medium shadow-sm hover:shadow-md flex items-center gap-2 whitespace-nowrap ${
-                  showFilters || selectedLocation !== 'all' || minCost > 0 || maxCost < 100
-                    ? 'bg-blue-500 text-white border-blue-500'
-                    : 'bg-white hover:bg-blue-50 border-blue-200 text-blue-700'
-                }`}
-              >
-                <Filter size={16} />
-                Filter
-                {(selectedLocation !== 'all' || minCost > 0 || maxCost < 100) && (
-                  <span className="bg-white text-blue-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                    !
-                  </span>
+            <div className="flex gap-2 relative">
+              <div className="relative">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`px-4 py-3 border-2 rounded-xl text-sm transition-all font-medium shadow-sm hover:shadow-md flex items-center gap-2 whitespace-nowrap ${
+                    showFilters || selectedLocation !== 'all' || minCost > 0 || maxCost < 100
+                      ? 'bg-blue-500 text-white border-blue-500'
+                      : 'bg-white hover:bg-blue-50 border-blue-200 text-blue-700'
+                  }`}
+                >
+                  <Filter size={16} />
+                  Filter
+                  {(selectedLocation !== 'all' || minCost > 0 || maxCost < 100) && (
+                    <span className="bg-white text-blue-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                      !
+                    </span>
+                  )}
+                </button>
+
+                {/* Filter Panel Overlay */}
+                {showFilters && (
+                  <>
+                    {/* Backdrop */}
+                    <div 
+                      className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity"
+                      onClick={() => setShowFilters(false)}
+                    />
+                    {/* Overlay Card */}
+                    <div className="absolute top-full right-0 mt-2 z-50">
+                      <div 
+                        className="bg-white border-2 border-blue-200 rounded-xl p-6 shadow-2xl w-96 max-h-[80vh] overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <Filter size={20} className="text-blue-500" />
+                            Filters
+                          </h3>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          {/* Location Filter */}
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Location
+                            </label>
+                            <select
+                              value={selectedLocation}
+                              onChange={(e) => setSelectedLocation(e.target.value)}
+                              className="w-full px-4 py-2 border-2 border-blue-200 rounded-lg focus:outline-none focus:border-blue-500 text-gray-700 bg-white"
+                            >
+                              <option value="all">All Locations</option>
+                              {uniqueLocations.map((loc) => (
+                                <option key={loc} value={loc}>
+                                  {loc}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Cost Range */}
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Min Cost: ${minCost}
+                            </label>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="5"
+                              value={minCost}
+                              onChange={(e) => setMinCost(Number(e.target.value))}
+                              className="w-full accent-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Max Cost: ${maxCost}
+                            </label>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="5"
+                              value={maxCost}
+                              onChange={(e) => setMaxCost(Number(e.target.value))}
+                              className="w-full accent-blue-500"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Reset Filters */}
+                        <div className="mt-4 flex justify-end">
+                          <button
+                            onClick={() => {
+                              setSelectedLocation('all');
+                              setMinCost(0);
+                              setMaxCost(100);
+                            }}
+                            className="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            Reset Filters
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
-              </button>
+              </div>
               <button
                 onClick={() => {
                   const options: ('date' | 'cost' | 'location' | 'activity')[] = ['date', 'cost', 'location', 'activity'];
@@ -316,91 +405,6 @@ export default function TravelCalendar() {
               </button>
             </div>
           </div>
-
-
-          {/* Filter Panel */}
-          {showFilters && (
-            <div className="mb-6 bg-white border-2 border-blue-200 rounded-xl p-6 shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Filter size={20} className="text-blue-500" />
-                  Filters
-                </h3>
-                <button
-                  onClick={() => setShowFilters(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Location Filter */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Location
-                  </label>
-                  <select
-                    value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
-                    className="w-full px-4 py-2 border-2 border-blue-200 rounded-lg focus:outline-none focus:border-blue-500 text-gray-700 bg-white"
-                  >
-                    <option value="all">All Locations</option>
-                    {uniqueLocations.map((loc) => (
-                      <option key={loc} value={loc}>
-                        {loc}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Cost Range */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Min Cost: ${minCost}
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={minCost}
-                    onChange={(e) => setMinCost(Number(e.target.value))}
-                    className="w-full accent-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Max Cost: ${maxCost}
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={maxCost}
-                    onChange={(e) => setMaxCost(Number(e.target.value))}
-                    className="w-full accent-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Reset Filters */}
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={() => {
-                    setSelectedLocation('all');
-                    setMinCost(0);
-                    setMaxCost(100);
-                  }}
-                  className="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Reset Filters
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
@@ -434,124 +438,128 @@ export default function TravelCalendar() {
           </div>
         </div>
 
-        {/* Calendar */}
-        <div className="bg-white/90 backdrop-blur-sm border-2 border-blue-200 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-          {/* Decorative corner elements */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100/50 to-cyan-100/50 rounded-bl-full"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-teal-100/50 to-emerald-100/50 rounded-tr-full"></div>
-          
-          <div className="mb-6 relative z-10">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <CalendarIcon className="w-6 h-6 text-blue-500" />
-              <h2 className="text-2xl font-bold text-center bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                Travel Calendar
-              </h2>
+        {/* Calendar and Travel List Side by Side */}
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {/* Calendar */}
+          <div className="bg-white/90 backdrop-blur-sm flex-1 lg:max-w-3xl border-2 border-blue-200 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+            {/* Decorative corner elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100/50 to-cyan-100/50 rounded-bl-full"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-teal-100/50 to-emerald-100/50 rounded-tr-full"></div>
+            
+            <div className="mb-6 relative z-10">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <CalendarIcon className="w-6 h-6 text-blue-500" />
+                <h2 className="text-2xl font-bold text-center bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  Travel Calendar
+                </h2>
+              </div>
+
+              {/* Month Navigation */}
+              <div className="flex items-center justify-between mb-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-2 border-2 border-blue-100">
+                <button
+                  onClick={() => navigateMonth(-1)}
+                  className="p-2 hover:bg-white rounded-lg transition-all text-blue-700 hover:shadow-md"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <div className="flex items-center gap-3">
+                  <Plane className="w-5 h-5 text-blue-500" />
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                  </h3>
+                  <Plane className="w-5 h-5 text-cyan-500 rotate-180" />
+                </div>
+                <button
+                  onClick={() => navigateMonth(1)}
+                  className="p-2 hover:bg-white rounded-lg transition-all text-blue-700 hover:shadow-md"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </div>
             </div>
 
-            {/* Month Navigation */}
-            <div className="flex items-center justify-between mb-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-2 border-2 border-blue-100">
-              <button
-                onClick={() => navigateMonth(-1)}
-                className="p-2 hover:bg-white rounded-lg transition-all text-blue-700 hover:shadow-md"
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <div className="flex items-center gap-3">
-                <Plane className="w-5 h-5 text-blue-500" />
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </h3>
-                <Plane className="w-5 h-5 text-cyan-500 rotate-180" />
+            {/* Days of Week */}
+            <div className="grid grid-cols-7 gap-2 mb-3 relative z-10">
+              {daysOfWeek.map((day) => (
+                <div
+                  key={day}
+                  className="text-center text-sm font-bold text-blue-600 py-2 bg-gradient-to-b from-blue-50 to-cyan-50 rounded-lg border border-blue-100"
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-2 relative z-10 mb-6">{renderCalendar()}</div>
+
+            {/* Legend */}
+            <div className="mt-6 flex items-center justify-center gap-8 text-sm relative z-10 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-gradient-to-br from-blue-400 to-cyan-400 border-2 border-blue-300 rounded-lg shadow-sm"></div>
+                <span className="font-medium text-blue-700">Travel day</span>
               </div>
-              <button
-                onClick={() => navigateMonth(1)}
-                className="p-2 hover:bg-white rounded-lg transition-all text-blue-700 hover:shadow-md"
-              >
-                <ChevronRight size={24} />
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-white border-2 border-gray-300 rounded-lg"></div>
+                <span className="font-medium text-gray-600">No travel</span>
+              </div>
             </div>
           </div>
 
-          {/* Days of Week */}
-          <div className="grid grid-cols-7 gap-2 mb-3 relative z-10">
-            {daysOfWeek.map((day) => (
-              <div
-                key={day}
-                className="text-center text-sm font-bold text-blue-600 py-2 bg-gradient-to-b from-blue-50 to-cyan-50 rounded-lg border border-blue-100"
-              >
-                {day}
+          {/* Travel List Sidebar */}
+          <div className="w-full lg:w-[32rem] bg-white/90 backdrop-blur-sm border-2 border-blue-200 rounded-3xl p-6 shadow-2xl relative overflow-hidden lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-cyan-100/50 to-blue-100/50 rounded-bl-full"></div>
+            
+            <div className="flex items-center gap-3 mb-6 relative z-10">
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-2 rounded-xl shadow-lg">
+                <Plane className="w-5 h-5 text-white" />
               </div>
-            ))}
-          </div>
-
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2 relative z-10">{renderCalendar()}</div>
-
-          {/* Legend */}
-          <div className="mt-6 flex items-center justify-center gap-8 text-sm relative z-10 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-gradient-to-br from-blue-400 to-cyan-400 border-2 border-blue-300 rounded-lg shadow-sm"></div>
-              <span className="font-medium text-blue-700">Travel day</span>
+              <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                Upcoming Adventures
+              </h3>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-white border-2 border-gray-300 rounded-lg"></div>
-              <span className="font-medium text-gray-600">No travel</span>
+            
+            <div className="space-y-3 relative z-10">
+              {filteredTravelData.length === 0 ? (
+                <div className="text-center py-12">
+                  <Compass className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 text-lg font-medium">No trips found</p>
+                  <p className="text-gray-400 text-sm mt-2">Try adjusting your search or filters</p>
+                </div>
+              ) : (
+                filteredTravelData.map((trip, idx) => (
+                <div
+                  key={trip.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gradient-to-r from-blue-50 via-cyan-50 to-teal-50 border-2 border-blue-200 p-4 rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all group"
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className={`p-2.5 rounded-xl shadow-md group-hover:scale-110 transition-transform flex-shrink-0 ${
+                      idx % 3 === 0 ? "bg-gradient-to-br from-blue-500 to-cyan-500" :
+                      idx % 3 === 1 ? "bg-gradient-to-br from-teal-500 to-emerald-500" :
+                      "bg-gradient-to-br from-orange-500 to-amber-500"
+                    }`}>
+                      <MapPin size={18} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-gray-900 text-base truncate">
+                        {trip.activity}
+                      </div>
+                      <div className="text-xs text-gray-600 flex items-center gap-2 mt-1">
+                        <Compass size={10} className="text-blue-500 flex-shrink-0" />
+                        <span className="truncate">{trip.location} • {trip.day} at {trip.time}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border border-blue-100 flex-shrink-0">
+                    <DollarSign size={16} className="text-green-600" />
+                    <span className="text-green-600 font-bold">${trip.cost}</span>
+                  </div>
+                </div>
+                ))
+              )}
             </div>
           </div>
         </div>
-
-        {/* Travel List */}
-        <div className="mt-8 bg-white/90 backdrop-blur-sm border-2 border-blue-200 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-cyan-100/50 to-blue-100/50 rounded-bl-full"></div>
-          
-          <div className="flex items-center gap-3 mb-6 relative z-10">
-            <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-2 rounded-xl shadow-lg">
-              <Plane className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-              Upcoming Adventures
-            </h3>
-          </div>
-          
-          <div className="space-y-3 relative z-10">
-            {filteredTravelData.length === 0 ? (
-              <div className="text-center py-12">
-                <Compass className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg font-medium">No trips found</p>
-                <p className="text-gray-400 text-sm mt-2">Try adjusting your search or filters</p>
-              </div>
-            ) : (
-              filteredTravelData.map((trip, idx) => (
-              <div
-                key={trip.id}
-                className="flex items-center justify-between bg-gradient-to-r from-blue-50 via-cyan-50 to-teal-50 border-2 border-blue-200 p-5 rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform ${
-                    idx % 3 === 0 ? "bg-gradient-to-br from-blue-500 to-cyan-500" :
-                    idx % 3 === 1 ? "bg-gradient-to-br from-teal-500 to-emerald-500" :
-                    "bg-gradient-to-br from-orange-500 to-amber-500"
-                  }`}>
-                    <MapPin size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-gray-900 text-lg">
-                      {trip.activity}
-                    </div>
-                    <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                      <Compass size={12} className="text-blue-500" />
-                      {trip.location} • {trip.day} at {trip.time}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-blue-100">
-                  <DollarSign size={18} className="text-green-600" />
-                  <span className="text-green-600 font-bold text-lg">${trip.cost}</span>
-                </div>
-              </div>
-              ))
-            )}
-          </div>
         </div>
       </div>
     </div>

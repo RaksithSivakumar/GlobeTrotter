@@ -10,6 +10,7 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
+  isAdmin: boolean;
   signUp: (email: string, password: string, fullName: string, additionalData?: {
     firstName?: string;
     lastName?: string;
@@ -19,7 +20,7 @@ interface AuthContextType {
     avatarUrl?: string;
     additionalInfo?: string;
   }) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ isAdmin: boolean }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -31,6 +32,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Admin credentials
+  const ADMIN_CREDENTIALS = {
+    email: 'admin@globetrotter.com',
+    password: 'admin123',
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -56,15 +64,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const cachedUser = localStorage.getItem('globetrotter_user');
       const cachedProfile = localStorage.getItem('globetrotter_profile');
       const cachedSession = localStorage.getItem('globetrotter_session');
+      const cachedIsAdmin = localStorage.getItem('globetrotter_is_admin');
 
       if (cachedUser && cachedProfile && cachedSession) {
         const user = JSON.parse(cachedUser);
         const profile = JSON.parse(cachedProfile);
         const session = JSON.parse(cachedSession);
+        const isAdmin = cachedIsAdmin === 'true' || user.role === 'admin';
         
         setUser(user);
         setProfile(profile);
         setSession(session);
+        setIsAdmin(isAdmin);
         setLoading(false);
         return;
       }
@@ -181,7 +192,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<{ isAdmin: boolean }> => {
+    // Check for admin credentials
+    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+      // Create admin user and profile
+      const adminUser = {
+        id: 'admin-user-id-456',
+        email: ADMIN_CREDENTIALS.email,
+        created_at: new Date().toISOString(),
+        app_metadata: { role: 'admin' },
+        user_metadata: { role: 'admin' },
+        aud: 'authenticated',
+        confirmation_sent_at: undefined,
+        recovery_sent_at: undefined,
+        email_confirmed_at: new Date().toISOString(),
+        invited_at: undefined,
+        action_link: undefined,
+        phone: undefined,
+        phone_confirmed_at: undefined,
+        phone_confirmed: false,
+        confirmed_at: new Date().toISOString(),
+        last_sign_in_at: new Date().toISOString(),
+        role: 'admin',
+        updated_at: new Date().toISOString(),
+        identities: [],
+        factors: undefined,
+        is_anonymous: false,
+      } as User;
+
+      const adminProfile: Profile = {
+        id: adminUser.id,
+        email: adminUser.email!,
+        full_name: 'Admin User',
+        avatar_url: null,
+        language: 'en',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const adminSession = {
+        access_token: 'admin-access-token',
+        token_type: 'bearer' as const,
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        refresh_token: 'admin-refresh-token',
+        user: adminUser,
+      } as Session;
+
+      // Store in localStorage
+      try {
+        localStorage.setItem('globetrotter_user', JSON.stringify(adminUser));
+        localStorage.setItem('globetrotter_profile', JSON.stringify(adminProfile));
+        localStorage.setItem('globetrotter_session', JSON.stringify(adminSession));
+        localStorage.setItem('globetrotter_is_admin', 'true');
+      } catch (error) {
+        console.error('Error storing admin data:', error);
+      }
+
+      setUser(adminUser);
+      setProfile(adminProfile);
+      setSession(adminSession);
+      setIsAdmin(true);
+      return { isAdmin: true };
+    }
+
     // Mock authentication for demo purposes
     const mockCredentials = {
       email: 'demo@globetrotter.com',
@@ -238,6 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('globetrotter_user', JSON.stringify(mockUser));
         localStorage.setItem('globetrotter_profile', JSON.stringify(mockProfile));
         localStorage.setItem('globetrotter_session', JSON.stringify(mockSession));
+        localStorage.removeItem('globetrotter_is_admin');
       } catch (error) {
         console.error('Error storing user data:', error);
       }
@@ -245,7 +320,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(mockUser);
       setProfile(mockProfile);
       setSession(mockSession);
-      return;
+      setIsAdmin(false);
+      return { isAdmin: false };
     }
 
     // Fallback to real Supabase auth for other credentials
@@ -255,6 +331,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (error) throw error;
+    
+    setIsAdmin(false);
+    return { isAdmin: false };
   };
 
   const signOut = async () => {
@@ -264,21 +343,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('globetrotter_user');
       localStorage.removeItem('globetrotter_profile');
       localStorage.removeItem('globetrotter_session');
+      localStorage.removeItem('globetrotter_is_admin');
     } catch (error) {
       console.error('Error clearing user data:', error);
     }
 
-    // Check if it's a mock user
-    if (user?.id === 'mock-user-id-123' || user?.id?.startsWith('user-')) {
+    // Check if it's a mock user or admin
+    if (user?.id === 'mock-user-id-123' || user?.id === 'admin-user-id-456' || user?.id?.startsWith('user-')) {
       setUser(null);
       setProfile(null);
       setSession(null);
+      setIsAdmin(false);
       return;
     }
     
     // Fallback to real Supabase auth
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    setIsAdmin(false);
   };
 
   return (
@@ -288,6 +370,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         session,
         loading,
+        isAdmin,
         signUp,
         signIn,
         signOut,

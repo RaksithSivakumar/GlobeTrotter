@@ -65,9 +65,14 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signIn(email, password);
+      const { isAdmin } = await signIn(email, password);
       toast.success('Login successful!');
-      router.push('/dashboard');
+      // Route to admin dashboard if admin, otherwise to user dashboard
+      if (isAdmin) {
+        router.push('/admin-dashboard');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (error: any) {
       const errorMessage = error.message || 'Invalid email or password';
       toast.error(errorMessage);
@@ -141,11 +146,8 @@ export default function LoginPage() {
                     }`}
                   />
                 </div>
-                {errors.email ? (
-                  <p className="text-sm text-red-500 mt-1">{errors.email}</p>
-                ) : (
-                  <p className="text-xs text-gray-500">Demo: demo@globetrotter.com</p>
-                )}
+                <p className="text-xs text-gray-500">Demo: demo@globetrotter.com</p>
+                <p className="text-xs text-gray-500">Admin: admin@globetrotter.com</p>
               </div>
 
               {/* Password Input */}
@@ -177,11 +179,8 @@ export default function LoginPage() {
                     )}
                   </button>
                 </div>
-                {errors.password ? (
-                  <p className="text-sm text-red-500 mt-1">{errors.password}</p>
-                ) : (
-                  <p className="text-xs text-gray-500">Demo: demo123</p>
-                )}
+                <p className="text-xs text-gray-500">Demo: demo123</p>
+                <p className="text-xs text-gray-500 mt-1">Admin: admin123</p>
               </div>
 
               {/* Login Button */}
