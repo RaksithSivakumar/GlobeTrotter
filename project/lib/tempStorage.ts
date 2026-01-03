@@ -130,6 +130,7 @@ export interface ItinerarySectionData {
   startDate: string;
   endDate: string;
   budget: string;
+  type?: 'travel' | 'hotel' | 'activity' | 'food';
 }
 
 const ITINERARY_SECTIONS_KEY = 'globe_trotter_itinerary_sections';
