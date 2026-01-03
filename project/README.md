@@ -70,31 +70,19 @@ All tables have Row Level Security (RLS) enabled to ensure users can only access
    ```bash
    npm install
    ```
-
-3. **Configure Supabase**
-
-   - Create a new Supabase project at [https://app.supabase.com](https://app.supabase.com)
-   - Copy your project URL and anon key
-   - Update `.env.local` with your credentials:
-
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-
-4. **Run database migrations**
+3. **Run database migrations**
 
    The database schema has already been created. Supabase will automatically set up:
    - All tables (profiles, trips, cities, stops, activities, etc.)
    - Row Level Security policies
    - Sample city and activity data
 
-5. **Start the development server**
+4. **Start the development server**
    ```bash
    npm run dev
    ```
 
-6. **Open your browser**
+5. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## Project Structure
@@ -117,7 +105,6 @@ All tables have Row Level Security (RLS) enabled to ensure users can only access
 ├── contexts/             # React contexts
 │   └── AuthContext.tsx   # Authentication context
 ├── lib/                  # Utility files
-│   ├── supabase.ts       # Supabase client
 │   ├── types.ts          # TypeScript types
 │   └── utils.ts          # Helper functions
 └── public/               # Static assets
