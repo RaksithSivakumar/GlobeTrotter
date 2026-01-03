@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { Trip } from '@/lib/types';
+import { getTempTrips, deleteTempTrip, saveTempTrip, initializeTempStorage } from '@/lib/tempStorage';
 import { Plus, Map, Calendar, DollarSign, Eye, Edit, Trash2, Share2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -46,48 +47,88 @@ export default function TripsPage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (user) {
-      fetchTrips();
-    }
-  }, [user]);
+    // Initialize temp storage with mock data
+    initializeTempStorage();
+    
+    // Load trips from temporary storage
+    fetchTrips();
+  }, []);
 
   const fetchTrips = async () => {
-    const { data, error } = await supabase
-      .from('trips')
-      .select('*')
-      .eq('user_id', user!.id)
-      .order('start_date', { ascending: false });
+    try {
+      // Try to load from Supabase first
+      if (user) {
+        const { data, error } = await supabase
+          .from('trips')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('start_date', { ascending: false });
 
-    if (data) setTrips(data);
-    setLoadingData(false);
+        if (data && data.length > 0) {
+          setTrips(data);
+          setLoadingData(false);
+          return;
+        }
+      }
+      
+      // Fallback to temporary storage
+      const tempTrips = getTempTrips();
+      setTrips(tempTrips);
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+      // Fallback to temporary storage
+      const tempTrips = getTempTrips();
+      setTrips(tempTrips);
+    } finally {
+      setLoadingData(false);
+    }
   };
 
   const handleDelete = async (tripId: string) => {
-    const { error } = await supabase
-      .from('trips')
-      .delete()
-      .eq('id', tripId);
+    try {
+      // Try to delete from Supabase first
+      if (user && !tripId.startsWith('temp-') && !tripId.startsWith('mock-')) {
+        const { error } = await supabase
+          .from('trips')
+          .delete()
+          .eq('id', tripId);
 
-    if (error) {
-      toast.error('Failed to delete trip');
-    } else {
+        if (error) throw error;
+      }
+      
+      // Delete from temporary storage
+      deleteTempTrip(tripId);
       toast.success('Trip deleted successfully');
       setTrips(trips.filter(t => t.id !== tripId));
+    } catch (error) {
+      console.error('Error deleting trip:', error);
+      toast.error('Failed to delete trip');
+    } finally {
+      setDeleteDialog(null);
     }
-    setDeleteDialog(null);
   };
 
   const togglePublic = async (trip: Trip) => {
-    const { error } = await supabase
-      .from('trips')
-      .update({ is_public: !trip.is_public })
-      .eq('id', trip.id);
+    try {
+      // Try to update in Supabase first
+      if (user && !trip.id.startsWith('temp-') && !trip.id.startsWith('mock-')) {
+        const { error } = await supabase
+          .from('trips')
+          .update({ is_public: !trip.is_public })
+          .eq('id', trip.id);
 
-    if (error) {
-      toast.error('Failed to update trip visibility');
-    } else {
+        if (error) throw error;
+      }
+      
+      // Update in temporary storage
+      const updatedTrip = { ...trip, is_public: !trip.is_public };
+      saveTempTrip(updatedTrip);
+      
       toast.success(trip.is_public ? 'Trip is now private' : 'Trip is now public');
       fetchTrips();
+    } catch (error) {
+      console.error('Error updating trip visibility:', error);
+      toast.error('Failed to update trip visibility');
     }
   };
 
@@ -165,7 +206,7 @@ export default function TripsPage() {
                   {trip.description || 'No description provided'}
                 </p>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <span className="text-sm font-semibold text-indigo-600 flex items-center gap-1">
                     <DollarSign className="w-4 h-4" /> ${Number(trip.total_budget || 0).toFixed(0)}
                   </span>
@@ -176,6 +217,13 @@ export default function TripsPage() {
                     <IconBtn danger icon={<Trash2 />} onClick={() => setDeleteDialog(trip.id)} />
                   </div>
                 </div>
+
+                <Button
+                  onClick={() => router.push(`/itinerary?tripId=${trip.id}`)}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  Itinerary Plan
+                </Button>
               </CardContent>
             </Card>
           ))}
