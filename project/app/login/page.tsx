@@ -146,8 +146,8 @@ export default function LoginPage() {
                     }`}
                   />
                 </div>
-                <p className="text-xs text-gray-500">Demo: demo@globetrotter.com</p>
-                <p className="text-xs text-gray-500">Admin: admin@globetrotter.com</p>
+                {/* <p className="text-xs text-gray-500">Demo: demo@globetrotter.com</p>
+                <p className="text-xs text-gray-500">Admin: admin@globetrotter.com</p> */}
               </div>
 
               {/* Password Input */}
@@ -179,8 +179,8 @@ export default function LoginPage() {
                     )}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500">Demo: demo123</p>
-                <p className="text-xs text-gray-500 mt-1">Admin: admin123</p>
+                {/* <p className="text-xs text-gray-500">Demo: demo123</p>
+                <p className="text-xs text-gray-500 mt-1">Admin: admin123</p> */}
               </div>
 
               {/* Login Button */}

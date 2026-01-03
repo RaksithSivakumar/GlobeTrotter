@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +19,16 @@ import { Plane, User, Settings, LogOut, Home, Map, Calendar, Users } from 'lucid
 export default function Navbar() {
   const { user, profile, signOut, isAdmin = false } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   const navLinks = useMemo(() => [
     { href: isAdmin ? '/admin-dashboard' : '/dashboard', label: isAdmin ? 'Admin Dashboard' : 'Dashboard', icon: Home },
@@ -109,7 +119,7 @@ export default function Navbar() {
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem onClick={() => signOut()} className="flex items-center cursor-pointer text-red-600">
+              <DropdownMenuItem onClick={handleSignOut} className="flex items-center cursor-pointer text-red-600">
                 <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>
