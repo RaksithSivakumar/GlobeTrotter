@@ -10,7 +10,15 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, additionalData?: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    city?: string;
+    country?: string;
+    avatarUrl?: string;
+    additionalInfo?: string;
+  }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -43,6 +51,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Check localStorage for cached user data first
+    try {
+      const cachedUser = localStorage.getItem('globetrotter_user');
+      const cachedProfile = localStorage.getItem('globetrotter_profile');
+      const cachedSession = localStorage.getItem('globetrotter_session');
+
+      if (cachedUser && cachedProfile && cachedSession) {
+        const user = JSON.parse(cachedUser);
+        const profile = JSON.parse(cachedProfile);
+        const session = JSON.parse(cachedSession);
+        
+        setUser(user);
+        setProfile(profile);
+        setSession(session);
+        setLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error('Error loading cached user data:', error);
+    }
+
+    // Fallback to Supabase session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -68,21 +98,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+  const signUp = async (email: string, password: string, fullName: string, additionalData?: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    city?: string;
+    country?: string;
+    avatarUrl?: string;
+    additionalInfo?: string;
+  }) => {
+    // For demo purposes, create a mock user similar to signIn
+    // In production, you would use Supabase auth
+    const mockUserId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    const mockUser = {
+      id: mockUserId,
+      email: email,
+      created_at: new Date().toISOString(),
+      app_metadata: {},
+      user_metadata: {},
+      aud: 'authenticated',
+      confirmation_sent_at: undefined,
+      recovery_sent_at: undefined,
+      email_confirmed_at: new Date().toISOString(),
+      invited_at: undefined,
+      action_link: undefined,
+      phone: additionalData?.phone || undefined,
+      phone_confirmed_at: undefined,
+      phone_confirmed: false,
+      confirmed_at: new Date().toISOString(),
+      last_sign_in_at: new Date().toISOString(),
+      role: 'authenticated',
+      updated_at: new Date().toISOString(),
+      identities: [],
+      factors: undefined,
+      is_anonymous: false,
+    } as User;
 
-    if (error) throw error;
+    const fullNameFromData = additionalData?.firstName && additionalData?.lastName
+      ? `${additionalData.firstName} ${additionalData.lastName}`
+      : fullName;
 
-    if (data.user) {
-      await supabase.from('profiles').insert({
-        id: data.user.id,
-        email: data.user.email!,
-        full_name: fullName,
-      });
+    const mockProfile: Profile = {
+      id: mockUser.id,
+      email: mockUser.email!,
+      full_name: fullNameFromData,
+      avatar_url: additionalData?.avatarUrl || null,
+      language: 'en',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const mockSession = {
+      access_token: `mock-access-token-${mockUserId}`,
+      token_type: 'bearer' as const,
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      refresh_token: `mock-refresh-token-${mockUserId}`,
+      user: mockUser,
+    } as Session;
+
+    // Store extended user data in localStorage
+    const extendedUserData = {
+      ...additionalData,
+      fullName: fullNameFromData,
+      email: email,
+      userId: mockUserId,
+    };
+
+    try {
+      localStorage.setItem('globetrotter_user_data', JSON.stringify(extendedUserData));
+      localStorage.setItem('globetrotter_user', JSON.stringify(mockUser));
+      localStorage.setItem('globetrotter_profile', JSON.stringify(mockProfile));
+      localStorage.setItem('globetrotter_session', JSON.stringify(mockSession));
+    } catch (error) {
+      console.error('Error storing user data:', error);
     }
+
+    setUser(mockUser);
+    setProfile(mockProfile);
+    setSession(mockSession);
+    setLoading(false);
   };
 
   const signIn = async (email: string, password: string) => {
@@ -137,6 +233,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user: mockUser,
       } as Session;
 
+      // Store in localStorage
+      try {
+        localStorage.setItem('globetrotter_user', JSON.stringify(mockUser));
+        localStorage.setItem('globetrotter_profile', JSON.stringify(mockProfile));
+        localStorage.setItem('globetrotter_session', JSON.stringify(mockSession));
+      } catch (error) {
+        console.error('Error storing user data:', error);
+      }
+
       setUser(mockUser);
       setProfile(mockProfile);
       setSession(mockSession);
@@ -153,8 +258,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear localStorage
+    try {
+      localStorage.removeItem('globetrotter_user_data');
+      localStorage.removeItem('globetrotter_user');
+      localStorage.removeItem('globetrotter_profile');
+      localStorage.removeItem('globetrotter_session');
+    } catch (error) {
+      console.error('Error clearing user data:', error);
+    }
+
     // Check if it's a mock user
-    if (user?.id === 'mock-user-id-123') {
+    if (user?.id === 'mock-user-id-123' || user?.id?.startsWith('user-')) {
       setUser(null);
       setProfile(null);
       setSession(null);

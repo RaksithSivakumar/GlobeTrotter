@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Mail, Phone, MapPin, Globe, FileText, Camera, Eye, EyeOff, Lock } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Globe, FileText, Eye, EyeOff, Lock } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -32,28 +35,150 @@ const itemVariants = {
   },
 };
 
+interface FormErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
+  confirmPassword?: string;
+  city?: string;
+  country?: string;
+  avatarUrl?: string;
+}
+
 export default function RegisterPage() {
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const router = useRouter();
+  const { signUp } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Form data
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    city: '',
+    country: '',
+    additionalInfo: '',
+    avatarUrl: '',
+  });
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
+  // Form errors
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setAvatarPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-      }
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (!formData.city.trim()) {
+      newErrors.city = 'City is required';
+    }
+
+    if (!formData.country.trim()) {
+      newErrors.country = 'Country is required';
+    }
+
+    // Validate avatar URL if provided
+    if (formData.avatarUrl && !/^https?:\/\/.+\..+/.test(formData.avatarUrl)) {
+      newErrors.avatarUrl = 'Please enter a valid URL (e.g., https://example.com/image.jpg)';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error('Please fix the errors in the form');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const fullName = `${formData.firstName} ${formData.lastName}`;
+      
+      // Call signUp with all user data
+      await signUp(
+        formData.email,
+        formData.password,
+        fullName,
+        {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
+          city: formData.city,
+          country: formData.country,
+          avatarUrl: formData.avatarUrl || undefined,
+          additionalInfo: formData.additionalInfo || undefined,
+        }
+      );
+      
+      toast.success('Registration successful!');
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 100);
+    } catch (error: any) {
+      toast.error(error.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get initials for default avatar
+  const getInitials = () => {
+    const first = formData.firstName.charAt(0).toUpperCase() || '';
+    const last = formData.lastName.charAt(0).toUpperCase() || '';
+    return first + last || 'U';
+  };
+
+  // Use avatar URL if provided, otherwise show initials
+  const avatarDisplay = formData.avatarUrl || null;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 py-8 relative overflow-hidden">
@@ -75,47 +200,29 @@ export default function RegisterPage() {
       >
         <Card className="backdrop-blur-xl bg-white/60 border-white/30 shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
           <CardContent className="p-8">
-            {/* Circular Avatar with Upload */}
+            {/* Circular Avatar with URL Input (Optional) */}
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
               className="flex flex-col items-center mb-6"
             >
-              <div className="relative">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  name="avatar"
-                />
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleAvatarClick}
-                  className="cursor-pointer"
-                >
-                  <Avatar className="h-24 w-24 border-4 border-white/50 shadow-lg ring-2 ring-blue-200/50">
-                    {avatarPreview && (
-                      <AvatarImage src={avatarPreview} alt="Profile preview" />
-                    )}
-                    <AvatarFallback className="bg-gradient-to-br from-blue-400 to-cyan-500 text-white text-3xl font-semibold">
-                      <User className="h-12 w-12" />
-                    </AvatarFallback>
-                  </Avatar>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-2 shadow-lg border-2 border-white"
-                >
-                  <Camera className="h-4 w-4 text-white" />
-                </motion.div>
-              </div>
-              <p className="text-center mt-3 text-sm text-gray-600">Click to upload photo</p>
+              <Avatar className="h-24 w-24 border-4 border-white/50 shadow-lg ring-2 ring-blue-200/50">
+                {avatarDisplay && (
+                  <AvatarImage 
+                    src={avatarDisplay} 
+                    alt="Profile preview"
+                    onError={(e) => {
+                      // If image fails to load, show fallback
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
+                <AvatarFallback className="bg-gradient-to-br from-blue-400 to-cyan-500 text-white text-3xl font-semibold">
+                  {getInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <p className="text-center mt-3 text-sm text-gray-600">Profile Photo (Optional)</p>
             </motion.div>
 
             {/* Title */}
@@ -135,76 +242,105 @@ export default function RegisterPage() {
               initial="hidden"
               animate="visible"
               className="space-y-5"
+              onSubmit={handleSubmit}
             >
               {/* First Name and Last Name - Grid on desktop, stacked on mobile */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <motion.div variants={itemVariants} className="space-y-2">
                   <Label htmlFor="firstName" className="text-gray-700 font-medium">
-                    First Name
+                    First Name <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input
                       id="firstName"
                       type="text"
+                      value={formData.firstName}
+                      onChange={(e) => handleChange('firstName', e.target.value)}
                       placeholder="John"
-                      className="pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+                      className={`pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 ${
+                        errors.firstName ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                     />
                   </div>
+                  {errors.firstName && (
+                    <p className="text-sm text-red-500 mt-1">{errors.firstName}</p>
+                  )}
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="space-y-2">
                   <Label htmlFor="lastName" className="text-gray-700 font-medium">
-                    Last Name
+                    Last Name <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input
                       id="lastName"
                       type="text"
+                      value={formData.lastName}
+                      onChange={(e) => handleChange('lastName', e.target.value)}
                       placeholder="Doe"
-                      className="pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+                      className={`pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 ${
+                        errors.lastName ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                     />
                   </div>
+                  {errors.lastName && (
+                    <p className="text-sm text-red-500 mt-1">{errors.lastName}</p>
+                  )}
                 </motion.div>
               </div>
 
               {/* Email Address */}
               <motion.div variants={itemVariants} className="space-y-2">
                 <Label htmlFor="email" className="text-gray-700 font-medium">
-                  Email Address
+                  Email Address <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <Input
                     id="email"
                     type="email"
+                    value={formData.email}
+                    onChange={(e) => handleChange('email', e.target.value)}
                     placeholder="john.doe@example.com"
-                    className="pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+                    className={`pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 ${
+                      errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+                )}
               </motion.div>
 
               {/* Phone Number */}
               <motion.div variants={itemVariants} className="space-y-2">
                 <Label htmlFor="phone" className="text-gray-700 font-medium">
-                  Phone Number
+                  Phone Number <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <Input
                     id="phone"
                     type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleChange('phone', e.target.value)}
                     placeholder="+1 (555) 123-4567"
-                    className="pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+                    className={`pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 ${
+                      errors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
                   />
                 </div>
+                {errors.phone && (
+                  <p className="text-sm text-red-500 mt-1">{errors.phone}</p>
+                )}
               </motion.div>
 
               {/* Password */}
               <motion.div variants={itemVariants} className="space-y-2">
                 <Label htmlFor="password" className="text-gray-700 font-medium">
-                  Password
+                  Password <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
@@ -212,8 +348,12 @@ export default function RegisterPage() {
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => handleChange('password', e.target.value)}
                     placeholder="Enter your password"
-                    className="pl-10 pr-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+                    className={`pl-10 pr-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 ${
+                      errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
                   />
                   <button
                     type="button"
@@ -227,12 +367,15 @@ export default function RegisterPage() {
                     )}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+                )}
               </motion.div>
 
               {/* Confirm Password */}
               <motion.div variants={itemVariants} className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-gray-700 font-medium">
-                  Confirm Password
+                  Confirm Password <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
@@ -240,8 +383,12 @@ export default function RegisterPage() {
                     id="confirmPassword"
                     name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleChange('confirmPassword', e.target.value)}
                     placeholder="Confirm your password"
-                    className="pl-10 pr-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+                    className={`pl-10 pr-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 ${
+                      errors.confirmPassword ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
                   />
                   <button
                     type="button"
@@ -255,50 +402,95 @@ export default function RegisterPage() {
                     )}
                   </button>
                 </div>
+                {errors.confirmPassword && (
+                  <p className="text-sm text-red-500 mt-1">{errors.confirmPassword}</p>
+                )}
               </motion.div>
 
               {/* City and Country - Grid on desktop, stacked on mobile */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <motion.div variants={itemVariants} className="space-y-2">
                   <Label htmlFor="city" className="text-gray-700 font-medium">
-                    City
+                    City <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input
                       id="city"
                       type="text"
+                      value={formData.city}
+                      onChange={(e) => handleChange('city', e.target.value)}
                       placeholder="New York"
-                      className="pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+                      className={`pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 ${
+                        errors.city ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                     />
                   </div>
+                  {errors.city && (
+                    <p className="text-sm text-red-500 mt-1">{errors.city}</p>
+                  )}
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="space-y-2">
                   <Label htmlFor="country" className="text-gray-700 font-medium">
-                    Country
+                    Country <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input
                       id="country"
                       type="text"
+                      value={formData.country}
+                      onChange={(e) => handleChange('country', e.target.value)}
                       placeholder="United States"
-                      className="pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+                      className={`pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 ${
+                        errors.country ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                     />
                   </div>
+                  {errors.country && (
+                    <p className="text-sm text-red-500 mt-1">{errors.country}</p>
+                  )}
                 </motion.div>
               </div>
+
+              {/* Profile Photo URL (Optional) */}
+              <motion.div variants={itemVariants} className="space-y-2">
+                <Label htmlFor="avatarUrl" className="text-gray-700 font-medium">
+                  Profile Photo URL (Optional)
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input
+                    id="avatarUrl"
+                    type="url"
+                    value={formData.avatarUrl}
+                    onChange={(e) => handleChange('avatarUrl', e.target.value)}
+                    placeholder="https://example.com/photo.jpg"
+                    className={`pl-10 h-11 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 font-mono text-sm ${
+                      errors.avatarUrl ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
+                  />
+                </div>
+                {errors.avatarUrl && (
+                  <p className="text-sm text-red-500 mt-1">{errors.avatarUrl}</p>
+                )}
+                {!errors.avatarUrl && (
+                  <p className="text-xs text-gray-500 mt-1">Leave empty to use default avatar with your initials</p>
+                )}
+              </motion.div>
 
               {/* Additional Information */}
               <motion.div variants={itemVariants} className="space-y-2">
                 <Label htmlFor="additionalInfo" className="text-gray-700 font-medium">
-                  Additional Information
+                  Additional Information (Optional)
                 </Label>
                 <div className="relative">
                   <FileText className="absolute left-3 top-4 h-5 w-5 text-gray-400" />
                   <Textarea
                     id="additionalInfo"
+                    value={formData.additionalInfo}
+                    onChange={(e) => handleChange('additionalInfo', e.target.value)}
                     placeholder="Tell us about yourself, your travel preferences, or anything else you'd like to share..."
                     className="pl-10 min-h-[120px] bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400 resize-none"
                   />
@@ -314,9 +506,10 @@ export default function RegisterPage() {
               >
                 <Button
                   type="submit"
-                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold text-base shadow-lg transition-all duration-200"
+                  disabled={loading}
+                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold text-base shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Register
+                  {loading ? 'Registering...' : 'Register'}
                 </Button>
               </motion.div>
             </motion.form>
